@@ -2427,6 +2427,9 @@ function procesarCorpacItems(items){
       ? publishedAt.replace('T', ' ').replace(':00', '') + ' UTC'
       : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null);
     
+    // Format publishedAt for display (replace T with space)
+    var publishedAtDisplay = publishedAt ? publishedAt.replace('T', ' ') : null;
+    
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'
       + (item.location ? 'A) ' + item.location + '\n' : '')
@@ -2454,7 +2457,7 @@ function procesarCorpacItems(items){
       aero: { cod: item.location || '', nom: FIR_SPIM[item.location] || '' },
       fecha: fecha,
       fechaTs: fechaTs,
-      publishedAt: item.published_at || null,
+      publishedAt: publishedAtDisplay,
       tipo: null,
       expTs: expTs,
       perm: cf ? cf.perm : false,
