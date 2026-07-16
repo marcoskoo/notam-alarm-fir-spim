@@ -568,6 +568,11 @@ textarea::placeholder { color:#a0aab8; }
 .filter-btn.f-perm:hover { border-color:#0ea5e9; background:#f0f9ff; }
 .filter-btn.f-perm.active { background:linear-gradient(135deg,#0369a1,#0ea5e9); color:#fff; border-color:#0369a1; box-shadow:0 2px 8px rgba(14,165,233,.35); }
 
+/* ÚLTIMO PUBLICADO — naranja/ámbar */
+.filter-btn.f-ultpub { border-color:#fcd34d; color:#92400e; }
+.filter-btn.f-ultpub:hover { border-color:#f59e0b; background:#fffbeb; }
+.filter-btn.f-ultpub.active { background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; border-color:#d97706; box-shadow:0 2px 8px rgba(245,158,11,.35); }
+
 /* ── Search filter inputs ── */
 .filter-search-row {
   display:flex; align-items:center; gap:7px; flex-wrap:wrap;
@@ -888,6 +893,15 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
             <path d="M1.5 8C1.5 8 3 4.5 5.5 4.5S8 7 8 8s1 3.5 2.5 3.5S14.5 8 14.5 8s-1.5-3.5-4-3.5S8 7 8 8 7 11.5 5.5 11.5 1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>
           </svg>
           PERM
+        </button>
+
+        <!-- ÚLTIMO PUBLICADO -->
+        <button class="filter-btn f-ultpub" id="fbUltPub" onclick="setFiltro('ultpub')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Último Publicado
         </button>
 
       </div>
@@ -1743,14 +1757,23 @@ function card(n, idx, terminos){
 ══════════════════════════════════════════════ */
 function setFiltro(tipo){
   filtroActual = tipo;
-  ['fbTodos','fbEst','fbSino','fbPerm'].forEach(function(id){
+  ['fbTodos','fbEst','fbSino','fbPerm','fbUltPub'].forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm'};
+  var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm', ultpub:'fbUltPub'};
   var el = document.getElementById(map[tipo]);
   if(el) el.classList.add('active');
+  
+  // Si selecciona "Último Publicado", activar modo de orden por publicación
+  if(tipo === 'ultpub'){
+    sortMode = 'publication';
+  } else {
+    sortMode = 'expiration';
+  }
+  sortNotams();
   renderizar();
+  updateSortBadge();
 }
 
 function aplicarBusqueda(){
@@ -1890,6 +1913,7 @@ function notamVisible(n){
   if(filtroActual==='est')  { if(!n.alarma || n.perm) return false; }
   if(filtroActual==='sino') { if(n.alarma  || n.perm) return false; }
   if(filtroActual==='perm') { if(!n.perm) return false; }
+  /* ultpub muestra todos, solo cambia el orden */
 
   /* Filtro por número de NOTAM (acepta: A0864/26, 0864/26, 0864, etc.) */
   if(filtroNumero.length >= 2){
