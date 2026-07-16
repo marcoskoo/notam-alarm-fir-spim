@@ -55,24 +55,42 @@ with sync_playwright() as p:
             // Split by newlines
             var lines = body.split('\\n');
             
-            // First line: NOTAM ID and type
-            var firstLine = (lines[0] || '').trim();
-            var notamId = firstLine.split(' ')[0] || '';
+            // Find the NOTAM ID line and publication date
+            var notamId = '';
+            var publishedAt = '';
+            var notamStartIdx = 0;
             
-            // Get remaining lines (Q through E)
-            var remaining = lines.slice(1).join('\\n').trim();
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                // Check if this line contains the NOTAM ID (e.g., A2402/26 NOTAMN)
+                var idMatch = line.match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
+                if (idMatch) {
+                    notamId = idMatch[1];
+                    notamStartIdx = i;
+                    break;
+                }
+                // Check for publication date pattern (DD/MM/YYYY HH:MM:SS)
+                var dateMatch = line.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                if (dateMatch && !notamId) {
+                    publishedAt = dateMatch[1];
+                }
+            }
+            
+            if (!notamId) return;
+            
+            // Get remaining lines after NOTAM ID
+            var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
             
             // Extract Q line
             var qMatch = remaining.match(/Q\\)\\s*(.+)/);
             var qLine = qMatch ? qMatch[1].trim() : '';
             
             // Extract detail lines (A through E)
-            var detailLines = [];
             var remaining2 = remaining;
-            if (qLine) {
+            if (qMatch) {
                 var qEndIdx = remaining2.indexOf('Q)');
                 if (qEndIdx >= 0) {
-                    remaining2 = remaining2.substring(qEndIdx + qLine.length + 3);
+                    remaining2 = remaining2.substring(qEndIdx + qMatch[0].length);
                 }
             }
             var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
@@ -88,23 +106,8 @@ with sync_playwright() as p:
                 if (locMatch) location = locMatch[1];
             }
             
-            // Extract publication date from table row (DD/MM/YYYY HH:MM:SS)
-            var publishedAt = '';
-            var tableRow = link.closest('tr');
-            if (tableRow) {
-                var cells = tableRow.querySelectorAll('td');
-                for (var i = 0; i < cells.length; i++) {
-                    var cellText = cells[i].textContent.trim();
-                    var dateMatch = cellText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
-                    if (dateMatch) {
-                        publishedAt = dateMatch[1];
-                        break;
-                    }
-                }
-            }
-            
             // Type
-            var typeMatch = firstLine.match(/(NOTAM[NRC])/);
+            var typeMatch = lines[notamStartIdx].match(/(NOTAM[NRC])/);
             var type = typeMatch ? typeMatch[1] : '';
             
             results.push({
