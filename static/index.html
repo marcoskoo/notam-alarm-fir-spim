@@ -2427,8 +2427,8 @@ function procesarCorpacItems(items){
       ? publishedAt.replace('T', ' ').replace(':00', '') + ' UTC'
       : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null);
     
-    // Format publishedAt for display (replace T with space)
-    var publishedAtDisplay = publishedAt ? publishedAt.replace('T', ' ') : null;
+    // Format publishedAt for display (replace T with double space)
+    var publishedAtDisplay = publishedAt ? publishedAt.replace('T', '  ') : null;
     
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'
