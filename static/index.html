@@ -985,7 +985,10 @@ var filtroActual = 'todos';   // 'todos' | 'est' | 'sino' | 'perm'
    PERSISTENCIA
 ══════════════════════════════════════════════ */
 function guardar(){ try{ localStorage.setItem(SK, JSON.stringify(notams)); }catch(e){} }
-function cargar(){  try{ var d=localStorage.getItem(SK); if(d) notams=JSON.parse(d); }catch(e){ notams=[]; }
+function cargar(){
+  /* Always start fresh — localStorage may have stale data from old versions */
+  try{ localStorage.removeItem(SK); }catch(e){}
+  notams = [];
 }
 
 /* ══════════════════════════════════════════════
