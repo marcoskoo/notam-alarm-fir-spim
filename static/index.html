@@ -3,216 +3,664 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOTAM ALARM — FIR SPIM</title>
+<title>Monitoreo de NOTAM FIR SPIM</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#a8afd8;min-height:100vh}
-.header{background:linear-gradient(180deg,#1c2e4a,#22395c);padding:18px 30px 14px;text-align:center;position:sticky;top:0;z-index:200}
-.header h1{color:#fff;font-size:1.45rem;font-weight:800}
-.header p{color:#a8c0d8;font-size:.8rem;margin-top:4px}
-.save-ind{position:absolute;top:10px;right:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.7rem;color:#cce0f5;display:flex;align-items:center;gap:5px}
-.save-dot{width:7px;height:7px;border-radius:50%;background:#4de89c;animation:blink 1.8s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.utc-bar{background:#12202e;padding:5px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;position:sticky;top:62px;z-index:199}
-.utc-lbl{color:#5a8aaa;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
-.utc-val{color:#4de89c;font-family:'Courier New',monospace;font-size:.9rem;font-weight:700}
-.wrap{max-width:1400px;margin:0 auto;padding:16px 16px 30px}
-.cols{display:grid;grid-template-columns:390px 1fr;gap:16px;align-items:start}
-:root{--h-main:110px;--h-bph:46px;--h-fbar:54px;--h-fsearch:52px;--h-sticky:calc(var(--h-main)+var(--h-bph)+var(--h-fbar)+var(--h-fsearch))}
-.left-sticky-col{position:sticky;top:var(--h-main);align-self:start}
-.ph{position:sticky;top:var(--h-main);z-index:90;border-radius:10px 10px 0 0}
-.right-panel{display:flex;flex-direction:column;height:calc(100vh - var(--h-main) - 32px);position:sticky;top:var(--h-main);align-self:start}
-.board-ph{position:sticky;top:0;z-index:92;background:#f6f8fc;border-radius:10px 10px 0 0;flex-shrink:0}
-.filter-bar{position:sticky;top:var(--h-bph);z-index:91;background:#f4f7fc;flex-shrink:0}
-.filter-search-row{position:sticky;top:calc(var(--h-bph)+var(--h-fbar));z-index:90;background:#f8fafc;flex-shrink:0}
-.board-body{flex:1;overflow-y:auto;overscroll-behavior:contain}
-.panel{background:#fff;border-radius:10px;box-shadow:0 3px 14px rgba(0,0,0,.12)}
-.ph{padding:11px 15px 10px;display:flex;align-items:center;gap:8px;border-bottom:2px solid #e0e8f4;border-radius:10px 10px 0 0;background:#f6f8fc}
-.ph h2{font-size:.93rem;font-weight:700;color:#1c2e4a}
-.ph-icon{font-size:1.1rem}
-.left-body{padding:14px 15px}
-textarea{width:100%;height:200px;border:1px solid #c8d0e0;border-radius:6px;padding:9px 11px;font-family:'Courier New',monospace;font-size:.73rem;color:#2a3a4a;background:#fafbfd;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}
-textarea:focus{border-color:#4a7fc0}
-textarea::placeholder{color:#a0aab8}
-.btn-row{display:flex;gap:8px;margin-top:9px}
-.btn{flex:1;padding:10px 8px;border:none;border-radius:7px;font-size:.86rem;font-weight:700;cursor:pointer;transition:filter .15s}
-.btn:hover{filter:brightness(1.08)}
-.btn-proc{background:#1c2e4a;color:#fff}
-.btn-clr{background:#e03050;color:#fff}
-.ibox{border-radius:6px;padding:9px 11px;margin-top:8px;font-size:.75rem;line-height:1.6}
-.ibox b{font-weight:700}
-.ibox .title{font-weight:700;margin-bottom:2px}
-.ib-p{background:#f0eafd;border:1px solid #c0a0e8;color:#3a1a6a}
-.ib-g{background:#e8fdf0;border:1px solid #a0e8bc;color:#1a5a30}
-.ib-o{background:#fff8e8;border:1px solid #f0d080;color:#5a3a00}
-.tag{display:inline-block;padding:1px 5px;border-radius:3px;font-weight:700;font-size:.72rem}
-.tg{background:#4de89c;color:#003820}
-.ty{background:#f0b429;color:#3a2000}
-.tp{background:#8a70c8;color:#fff}
-.board-ph{padding:11px 15px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #e0e8f4;border-radius:10px 10px 0 0;background:#f6f8fc}
-.board-ph-left{display:flex;align-items:center;gap:8px}
-.board-ph-left h2{font-size:.93rem;font-weight:700;color:#1c2e4a}
-.sort-badge{background:#e03050;color:#fff;font-size:.66rem;font-weight:700;padding:4px 10px;border-radius:20px}
-.board-count{font-size:.72rem;color:#7a8a9a}
-.board-body{padding:12px;display:flex;flex-direction:column;gap:12px}
-.empty-s{text-align:center;padding:50px 20px;color:#9aa0b0}
-.hl-match{background:#16a34a;color:#fff;border-radius:3px;padding:0 2px;font-weight:700}
-.nav-arrows{display:none;align-items:center;gap:4px;margin-left:auto}
-.nav-arrows.visible{display:flex}
-.nav-btn{width:28px;height:28px;border:1.5px solid #c8d4f0;border-radius:6px;background:#fff;color:#1c2e4a;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none}
-.nav-btn:hover{background:#1c2e4a;color:#fff;border-color:#1c2e4a}
-.nav-btn:disabled{opacity:.35;cursor:default}
-.nav-pos{font-size:.7rem;color:#64748b;font-weight:700;min-width:40px;text-align:center}
-.ncard.nav-focus{outline:3px solid #2563eb;outline-offset:1px}
-.empty-s .ei{font-size:2.6rem;margin-bottom:10px;opacity:.3}
-.empty-s p{font-size:.83rem;line-height:1.7}
-.ncard{background:#fff;border:1px solid #e2e8f0;border-left:5px solid #7c3aed;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.08);margin-bottom:0}
-.ncard.serie-C{border-left-color:#d97706}
-.ncard.expired{border-left-color:#94a3b8;opacity:.72}
-.ncard.ringing{border-left-color:#e03050!important;box-shadow:0 0 0 3px rgba(224,48,80,.22)!important;animation:rpulse 1s ease-in-out infinite}
-@keyframes rpulse{0%,100%{box-shadow:0 0 0 2px rgba(224,48,80,.18)}50%{box-shadow:0 0 0 5px rgba(224,48,80,.4)}}
-.c-head{padding:10px 12px 9px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.c-id{font-size:1.1rem;font-weight:800;color:#1e293b;letter-spacing:.02em}
-.c-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.bdg{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;letter-spacing:.03em}
-.b-int{color:#2563eb;background:transparent;padding:4px 2px;font-size:.76rem}
-.b-nac{color:#d97706;background:transparent;padding:4px 2px;font-size:.76rem}
-.b-mas-urg{background:#ef4444;color:#fff}
-.b-urg{background:#f97316;color:#fff}
-.b-prox{background:#1c2e4a;color:#fff}
-.b-act{background:#22c55e;color:#fff}
-.b-exp{background:#94a3b8;color:#fff}
-.b-est{background:#10b981;color:#fff}
-.b-sino{background:#7c3aed;color:#fff}
-.b-perm{background:#7c3aed;color:#fff}
-.bdg-tipo{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700}
-.bdg-tipo-n{background:#dbeafe;color:#1d4ed8}
-.bdg-tipo-r{background:#fef3c7;color:#92400e}
-.bdg-tipo-c{background:#fee2e2;color:#991b1b}
-.tipo-ref{font-size:.67rem;color:#78716c;font-style:italic}
-.aero-strip{padding:6px 13px 5px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.aero-left{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
-.aero-cod{font-family:'Courier New',monospace;font-size:.88rem;font-weight:800;color:#1e3a5f;white-space:nowrap}
-.aero-nom{font-size:.76rem;color:#475569}
-.aero-sep{color:#cbd5e1;margin:0 5px}
-.fir-tag{font-family:'Courier New',monospace;font-size:.67rem;color:#7c3aed;font-weight:600;background:#f5f3ff;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe;white-space:nowrap}
-.q-tag{font-family:'Courier New',monospace;font-size:.66rem;color:#0369a1;background:#f0f9ff;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap}
-.tipo-strip{padding:4px 13px 0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:.72rem}
-.c-sep{height:1px;background:#e2e8f0}
-.raw-notam-box{font-family:'Courier New',monospace;font-size:.75rem;color:#374151;line-height:1.7;white-space:pre-wrap;word-break:break-word;background:#f8fafc;padding:10px 12px 10px 13px;border-bottom:1px solid #e2e8f0}
-.c-bottom{padding:12px 13px 0 13px}
-.ck-display{font-family:'Courier New',monospace;font-size:2.1rem;font-weight:900;letter-spacing:.03em;line-height:1;margin-bottom:5px}
-.ck-blue{color:#2563eb}
-.ck-red{color:#db2777}
-.ck-gray{color:#94a3b8}
-.ck-vence{font-size:.76rem;color:#475569;margin-bottom:2px}
-.ck-rest{font-size:.72rem;color:#94a3b8;margin-bottom:10px}
-.ck-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.ck-left{flex:1}
-.ck-right{display:flex;align-items:center;gap:5px;font-size:.73rem;color:#64748b;white-space:nowrap;padding-top:4px}
-.st-dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0}
-.st-dot.ring{background:#ef4444;animation:blink .55s infinite}
-.perm-wrap{display:flex;align-items:center;gap:10px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:7px;padding:11px 13px;margin-bottom:12px}
-.perm-ico{font-size:1.35rem}
-.perm-txt{font-size:.84rem;font-weight:700;color:#6d28d9}
-.perm-sub{font-size:.69rem;color:#a78bfa;margin-top:1px}
-.c-btns{display:flex;margin-top:10px;border-top:1px solid #e2e8f0;border-radius:0 0 7px 7px;overflow:hidden}
-.c-btns .btn{flex:1;padding:11px 8px;border:none;border-radius:0;font-size:.85rem;font-weight:700;cursor:pointer;transition:filter .15s}
-.c-btns .btn:hover{filter:brightness(1.07)}
-.btn-sil-act{background:#e2e8f0;color:#64748b;display:none}
-.btn-no-alm{background:#e2e8f0;color:#94a3b8;cursor:default}
-.btn-del{background:linear-gradient(135deg,#e0306a,#b81050);color:#fff}
-.emit-foot{padding:5px 13px 6px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:.7rem;color:#94a3b8;display:flex;align-items:center;gap:5px;border-radius:0 0 7px 7px}
-.emit-foot b{font-family:'Courier New',monospace;color:#475569;font-weight:700}
-.fetch-panel{margin-top:14px;background:#f0f4fc;border:1px solid #c8d8f0;border-radius:8px;overflow:hidden}
-.fetch-hdr{padding:9px 12px;background:linear-gradient(135deg,#1c2e4a,#2a4060);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
-.fetch-hdr-title{color:#fff;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px}
-.fetch-hdr-arrow{color:#a8c0d8;font-size:.75rem;transition:transform .2s}
-.fetch-hdr-arrow.open{transform:rotate(180deg)}
-.fetch-body{padding:12px;display:none}
-.fetch-body.open{display:block}
-.fetch-label{font-size:.72rem;color:#4a5a6a;font-weight:600;margin-bottom:5px}
-.btn-fetch{background:linear-gradient(135deg,#1c2e4a,#2a4060);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:filter .15s}
-.btn-fetch:hover{filter:brightness(1.15)}
-.btn-fetch:disabled{opacity:.55;cursor:not-allowed}
-.btn-fetch-all{width:100%;padding:10px;border:none;border-radius:7px;background:linear-gradient(135deg,#1c2e4a,#2563eb);color:#fff;font-size:.84rem;font-weight:700;cursor:pointer;transition:filter .15s;letter-spacing:.02em}
-.btn-fetch-all:hover{filter:brightness(1.1)}
-.btn-fetch-all:disabled{opacity:.55;cursor:not-allowed}
-.fetch-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
-.chip-group-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:4px;margin-top:4px}
-.chip{padding:3px 9px;border-radius:20px;font-size:.69rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Courier New',monospace;user-select:none}
-.chip-int{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
-.chip-int:hover,.chip-int.sel{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
-.chip-nat{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-.chip-nat:hover,.chip-nat.sel{background:#d97706;color:#fff;border-color:#d97706}
-.fetch-icao-wrap{display:flex;gap:6px;margin-bottom:10px}
-.fetch-icao-wrap input{flex:1;padding:7px 10px;border:1px solid #c8d0e0;border-radius:6px;font-family:'Courier New',monospace;font-size:.78rem;color:#1c2e4a;background:#fff;outline:none;text-transform:uppercase}
-.fetch-icao-wrap input:focus{border-color:#4a7fc0}
-.fetch-status{font-size:.72rem;color:#4a5a6a;min-height:18px;display:flex;align-items:center;gap:5px;margin-bottom:6px}
-.spin{display:inline-block;animation:spin360 .8s linear infinite}
-@keyframes spin360{to{transform:rotate(360deg)}}
-.fetch-ok{color:#16a34a}
-.fetch-err{color:#dc2626}
-.fetch-info{color:#2563eb}
-.auto-refresh-row{display:flex;align-items:center;gap:8px;font-size:.72rem;color:#4a5a6a}
-.toggle-sw{position:relative;width:34px;height:18px;flex-shrink:0}
-.toggle-sw input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:#c8d0e0;border-radius:20px;cursor:pointer;transition:.2s}
-.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;left:2px;top:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.toggle-sw input:checked+.toggle-slider{background:#2563eb}
-.toggle-sw input:checked+.toggle-slider:before{transform:translateX(16px)}
-.filter-bar{display:flex;align-items:center;gap:7px;padding:9px 14px 8px;background:#f4f7fc;border-bottom:2px solid #e0e8f4;flex-wrap:wrap}
-.filter-label{font-size:.68rem;color:#6b7a9a;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-right:2px}
-.filter-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:.72rem;font-weight:700;border:2px solid #d0d8f0;background:#fff;color:#4a6a9a;cursor:pointer;transition:all .18s;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.07)}
-.filter-btn svg{flex-shrink:0}
-.filter-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
-.filter-btn:active{transform:translateY(0)}
-.filter-btn.f-todos{border-color:#94a3b8;color:#334155}
-.filter-btn.f-todos:hover{border-color:#1c2e4a;background:#eef2fb}
-.filter-btn.f-todos.active{background:#1c2e4a;color:#fff;border-color:#1c2e4a;box-shadow:0 2px 8px rgba(28,46,74,.3)}
-.filter-btn.f-est{border-color:#6ee7b7;color:#065f46}
-.filter-btn.f-est:hover{border-color:#10b981;background:#ecfdf5}
-.filter-btn.f-est.active{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-color:#059669;box-shadow:0 2px 8px rgba(16,185,129,.35)}
-.filter-btn.f-sino{border-color:#c4b5fd;color:#5b21b6}
-.filter-btn.f-sino:hover{border-color:#7c3aed;background:#f5f3ff}
-.filter-btn.f-sino.active{background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;border-color:#6d28d9;box-shadow:0 2px 8px rgba(109,40,217,.35)}
-.filter-btn.f-perm{border-color:#7dd3fc;color:#0c4a6e}
-.filter-btn.f-perm:hover{border-color:#0ea5e9;background:#f0f9ff}
-.filter-btn.f-perm.active{background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;border-color:#0369a1;box-shadow:0 2px 8px rgba(14,165,233,.35)}
-.filter-search-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 14px 8px;background:#f8fafc;border-bottom:1px solid #e0e8f4}
-.fsearch-wrap{display:flex;align-items:center;gap:0;border:1.5px solid #c8d4f0;border-radius:20px;background:#fff;overflow:hidden;flex:1;min-width:140px;max-width:220px;transition:border-color .15s}
-.fsearch-wrap:focus-within{border-color:#4a7fc0}
-.fsearch-icon{padding:0 8px 0 10px;color:#94a3b8;font-size:.8rem;user-select:none}
-.fsearch-input{flex:1;border:none;outline:none;padding:5px 10px 5px 0;font-family:'Courier New',monospace;font-size:.75rem;font-weight:700;color:#1c2e4a;background:transparent;text-transform:uppercase;letter-spacing:.06em}
-.fsearch-input::placeholder{color:#b0bcc8;font-family:Arial,sans-serif;font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem}
-.fsearch-clear{padding:0 9px;color:#b0bcc8;cursor:pointer;font-size:.9rem;user-select:none;transition:color .15s}
-.fsearch-clear:hover{color:#e03050}
-.fsearch-count{font-size:.67rem;color:#94a3b8;white-space:nowrap}
-.toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:#1c2e4a;color:#fff;border-radius:9px;padding:11px 18px;font-size:.8rem;max-width:360px;box-shadow:0 6px 24px rgba(0,0,0,.25);border-left:4px solid #4a7fc0;opacity:0;transform:translateY(12px);transition:all .25s}
-.toast.show{opacity:1;transform:translateY(0)}
-.toast.ok{border-left-color:#4de89c}
-.toast.err{border-left-color:#e03050}
-@media(max-width:860px){.cols{grid-template-columns:1fr;display:flex;flex-direction:column}.left-sticky-col{position:static!important}.ph,.board-ph,.filter-bar,.filter-search-row{position:static!important}.board-body{flex:none;overflow-y:visible}.right-panel{height:auto;position:static}}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #a8afd8;
+  min-height: 100vh;
+}
+
+/* ── HEADER ─────────────────────────────── */
+.header {
+  background: linear-gradient(180deg,#1c2e4a,#22395c);
+  padding: 18px 30px 14px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.header h1 { color:#fff; font-size:1.45rem; font-weight:800; }
+.header p  { color:#a8c0d8; font-size:.8rem; margin-top:4px; }
+.save-ind {
+  position:absolute; top:10px; right:14px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2);
+  border-radius:20px; padding:4px 12px; font-size:.7rem; color:#cce0f5;
+  display:flex; align-items:center; gap:5px;
+}
+.save-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:#4de89c; animation:blink 1.8s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── UTC BAR ────────────────────────────── */
+.utc-bar {
+  background:#12202e; padding:5px 20px;
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  position:sticky; top:62px; z-index:199;
+}
+.utc-lbl { color:#5a8aaa; font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; }
+.utc-val { color:#4de89c; font-family:'Courier New',monospace; font-size:.9rem; font-weight:700; }
+
+/* ── LAYOUT ─────────────────────────────── */
+.wrap  { max-width:1400px; margin:0 auto; padding:16px 16px 30px; }
+.cols  { display:grid; grid-template-columns:390px 1fr; gap:16px; align-items:start; }
+
+/* ── STICKY PANEL HEADERS ─────────────────── */
+/* CSS custom properties for header heights — easy to tune */
+:root {
+  --h-main:   110px;   /* header + utc-bar */
+  --h-bph:     46px;   /* board-ph title row */
+  --h-fbar:    54px;   /* filter buttons bar */
+  --h-fsearch: 52px;   /* filter search row */
+  --h-sticky: calc(var(--h-main) + var(--h-bph) + var(--h-fbar) + var(--h-fsearch));
+}
+
+/* Left column sticks below main header */
+.left-sticky-col {
+  position: sticky;
+  top: var(--h-main);
+  align-self: start;
+}
+/* Left panel header */
+.ph {
+  position: sticky;
+  top: var(--h-main);
+  z-index: 90;
+  border-radius: 10px 10px 0 0;
+}
+/* Right panel: make it a flex column so board-body can scroll internally */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--h-main) - 32px);
+  position: sticky;
+  top: var(--h-main);
+  align-self: start;
+}
+/* Right panel header sticks at top of panel */
+.board-ph {
+  position: sticky;
+  top: 0;
+  z-index: 92;
+  background: #f6f8fc;
+  border-radius: 10px 10px 0 0;
+  flex-shrink: 0;
+}
+/* Filter buttons bar */
+.filter-bar {
+  position: sticky;
+  top: var(--h-bph);
+  z-index: 91;
+  background: #f4f7fc;
+  flex-shrink: 0;
+}
+/* Search inputs row */
+.filter-search-row {
+  position: sticky;
+  top: calc(var(--h-bph) + var(--h-fbar));
+  z-index: 90;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+/* Board body scrolls internally — fills remaining space */
+.board-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ── GENERIC PANEL ──────────────────────── */
+.panel {
+  background:#fff;
+  border-radius:10px;
+  box-shadow: 0 3px 14px rgba(0,0,0,.12);
+}
+.ph { /* panel header */
+  padding:11px 15px 10px;
+  display:flex; align-items:center; gap:8px;
+  border-bottom:2px solid #e0e8f4;
+  border-radius:10px 10px 0 0;
+  background:#f6f8fc;
+}
+.ph h2 { font-size:.93rem; font-weight:700; color:#1c2e4a; }
+.ph-icon { font-size:1.1rem; }
+
+/* ── LEFT PANEL body ────────────────────── */
+.left-body { padding:14px 15px; }
+
+textarea {
+  width:100%; height:200px;
+  border:1px solid #c8d0e0; border-radius:6px;
+  padding:9px 11px;
+  font-family:'Courier New',monospace; font-size:.73rem;
+  color:#2a3a4a; background:#fafbfd;
+  resize:vertical; outline:none; line-height:1.6;
+  transition:border-color .2s;
+}
+textarea:focus { border-color:#4a7fc0; }
+textarea::placeholder { color:#a0aab8; }
+
+.btn-row { display:flex; gap:8px; margin-top:9px; }
+.btn {
+  flex:1; padding:10px 8px; border:none; border-radius:7px;
+  font-size:.86rem; font-weight:700; cursor:pointer;
+  transition:filter .15s;
+}
+.btn:hover { filter:brightness(1.08); }
+.btn-proc { background:#1c2e4a; color:#fff; }
+.btn-clr  { background:#e03050; color:#fff; }
+
+/* info boxes */
+.ibox {
+  border-radius:6px; padding:9px 11px; margin-top:8px;
+  font-size:.75rem; line-height:1.6;
+}
+.ibox b { font-weight:700; }
+.ibox .title { font-weight:700; margin-bottom:2px; }
+.ib-p { background:#f0eafd; border:1px solid #c0a0e8; color:#3a1a6a; }
+.ib-g { background:#e8fdf0; border:1px solid #a0e8bc; color:#1a5a30; }
+.ib-o { background:#fff8e8; border:1px solid #f0d080; color:#5a3a00; }
+.tag  { display:inline-block; padding:1px 5px; border-radius:3px; font-weight:700; font-size:.72rem; }
+.tg   { background:#4de89c; color:#003820; }
+.ty   { background:#f0b429; color:#3a2000; }
+.tp   { background:#8a70c8; color:#fff; }
+
+.leg-title { display:none; }
+.leg-row   { display:none; }
+.hl-y { background:#fde44a; color:#3a3000; padding:1px 6px; border-radius:3px; font-weight:700; font-size:.72rem; font-family:'Courier New',monospace; }
+.hl-g { background:#4de89c; color:#003820; padding:1px 6px; border-radius:3px; font-weight:700; font-size:.72rem; font-family:'Courier New',monospace; }
+.leg-ex { display:none; }
+
+/* ── BOARD HEADER ───────────────────────── */
+.board-ph {
+  padding:11px 15px 10px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:2px solid #e0e8f4;
+  border-radius:10px 10px 0 0;
+  background:#f6f8fc;
+}
+.board-ph-left { display:flex; align-items:center; gap:8px; }
+.board-ph-left h2 { font-size:.93rem; font-weight:700; color:#1c2e4a; }
+.sort-badge {
+  background:#e03050; color:#fff;
+  font-size:.66rem; font-weight:700;
+  padding:4px 10px; border-radius:20px;
+  cursor:pointer; transition:all .2s;
+  user-select:none;
+}
+.sort-badge:hover { filter:brightness(1.15); transform:scale(1.05); }
+.board-count { font-size:.72rem; color:#7a8a9a; }
+
+/* ── BOARD BODY ─────────────────────────── */
+.board-body {
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  /* Scrolling handled by flex parent (.right-panel) */
+}
+
+/* ── EMPTY STATE ────────────────────────── */
+.empty-s { text-align:center; padding:50px 20px; color:#9aa0b0; }
+
+/* ── HIGHLIGHT de texto filtrado ── */
+.hl-match {
+  background: #16a34a;
+  color: #fff;
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 700;
+}
+
+/* ── Navegación de resultados (flechas) ── */
+.nav-arrows {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.nav-arrows.visible { display: flex; }
+.nav-btn {
+  width: 28px; height: 28px;
+  border: 1.5px solid #c8d4f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #1c2e4a;
+  cursor: pointer;
+  font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  user-select: none;
+}
+.nav-btn:hover { background: #1c2e4a; color: #fff; border-color: #1c2e4a; }
+.nav-btn:disabled { opacity: .35; cursor: default; }
+.nav-pos {
+  font-size: .7rem; color: #64748b; font-weight: 700;
+  min-width: 40px; text-align: center;
+}
+/* Tarjeta activa (navegación) */
+.ncard.nav-focus {
+  outline: 3px solid #2563eb;
+  outline-offset: 1px;
+}
+.empty-s .ei { font-size:2.6rem; margin-bottom:10px; opacity:.3; }
+.empty-s p   { font-size:.83rem; line-height:1.7; }
+
+/* ════════════════════════════════════════
+   NOTAM CARD  — pixel-perfect imagen ref
+════════════════════════════════════════ */
+.ncard {
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-left:5px solid #7c3aed;   /* púrpura por defecto (serie A) */
+  border-radius:8px;
+  box-shadow:0 1px 6px rgba(0,0,0,.08);
+  margin-bottom:0;
+}
+.ncard.serie-C    { border-left-color:#d97706; }
+.ncard.expired    { border-left-color:#94a3b8; opacity:.72; }
+.ncard.ringing    {
+  border-left-color:#e03050 !important;
+  box-shadow:0 0 0 3px rgba(224,48,80,.22) !important;
+  animation:rpulse 1s ease-in-out infinite;
+}
+@keyframes rpulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(224,48,80,.18);}
+  50%    {box-shadow:0 0 0 5px rgba(224,48,80,.4);}
+}
+
+/* ── CABECERA: ID izquierda | badges derecha ── */
+.c-head {
+  padding:10px 12px 9px 13px;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  flex-wrap:wrap;
+}
+.c-id {
+  font-size:1.1rem; font-weight:800; color:#1e293b; letter-spacing:.02em;
+}
+.c-badges { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+
+/* Badges generales */
+.bdg {
+  display:inline-flex; align-items:center;
+  padding:4px 12px; border-radius:20px;
+  font-size:.7rem; font-weight:700; white-space:nowrap; letter-spacing:.03em;
+}
+/* Serie (texto plano, sin fondo) */
+.b-int { color:#2563eb; background:transparent; padding:4px 2px; font-size:.76rem; }
+.b-nac { color:#d97706; background:transparent; padding:4px 2px; font-size:.76rem; }
+/* Estado */
+.b-mas-urg { background:#ef4444; color:#fff; }
+.b-urg     { background:#f97316; color:#fff; }
+.b-prox    { background:#1c2e4a; color:#fff; }
+.b-act     { background:#22c55e; color:#fff; }
+.b-exp     { background:#94a3b8; color:#fff; }
+/* Alarma */
+.b-est     { background:#10b981; color:#fff; }
+.b-sino    { background:#7c3aed; color:#fff; }
+.b-perm    { background:#7c3aed; color:#fff; }
+
+/* Tipo NOTAM */
+.bdg-tipo   { display:inline-block; padding:3px 9px; border-radius:20px; font-size:.68rem; font-weight:700; }
+.bdg-tipo-n { background:#dbeafe; color:#1d4ed8; }
+.bdg-tipo-r { background:#fef3c7; color:#92400e; }
+.bdg-tipo-c { background:#fee2e2; color:#991b1b; }
+.tipo-ref   { font-size:.67rem; color:#78716c; font-style:italic; }
+/* Fecha de publicación */
+.bdg-pub    { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.67rem; font-weight:700; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; }
+
+/* ── AERÓDROMO display ── */
+.aero-strip {
+  padding:6px 13px 5px;
+  background:#f8fafc;
+  border-bottom:1px solid #e2e8f0;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:8px; flex-wrap:wrap;
+}
+.aero-left  { display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+.aero-cod   {
+  font-family:'Courier New',monospace; font-size:.88rem; font-weight:800;
+  color:#1e3a5f; white-space:nowrap;
+}
+.aero-nom   { font-size:.76rem; color:#475569; }
+.aero-sep   { color:#cbd5e1; margin:0 5px; }
+.fir-tag    {
+  font-family:'Courier New',monospace; font-size:.67rem; color:#7c3aed; font-weight:600;
+  background:#f5f3ff; padding:2px 8px; border-radius:10px; border:1px solid #ddd6fe;
+  white-space:nowrap;
+}
+.q-tag      {
+  font-family:'Courier New',monospace; font-size:.66rem; color:#0369a1;
+  background:#f0f9ff; padding:2px 8px; border-radius:10px; border:1px solid #bae6fd;
+  white-space:nowrap;
+}
+/* tipo badge strip */
+.tipo-strip {
+  padding:4px 13px 0;
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  font-size:.72rem;
+}
+
+/* ── SEPARADOR ── */
+.c-sep { height:1px; background:#e2e8f0; }
+
+/* ── CAJA DE TEXTO RAW — siempre visible, scrollable ── */
+.raw-notam-box {
+  font-family:'Courier New',monospace;
+  font-size:.75rem; color:#374151; line-height:1.7;
+  white-space:pre-wrap; word-break:break-word;
+  background:#f8fafc;
+  padding:10px 12px 10px 13px;
+  border-bottom:1px solid #e2e8f0;
+}
+
+/* ── ZONA INFERIOR: reloj + acciones ── */
+.c-bottom { padding:12px 13px 0 13px; }
+
+/* Reloj grande */
+.ck-display {
+  font-family:'Courier New',monospace;
+  font-size:2.1rem; font-weight:900; letter-spacing:.03em; line-height:1;
+  margin-bottom:5px;
+}
+.ck-blue    { color:#2563eb; }
+.ck-red     { color:#db2777; }   /* rosa/magenta exacto de la imagen */
+.ck-gray    { color:#94a3b8; }
+
+.ck-vence   { font-size:.76rem; color:#475569; margin-bottom:2px; }
+.ck-rest    { font-size:.72rem; color:#94a3b8; margin-bottom:10px; }
+
+/* Fila estado: reloj izquierda | dot+label derecha */
+.ck-row {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+}
+.ck-left  { flex:1; }
+.ck-right {
+  display:flex; align-items:center; gap:5px;
+  font-size:.73rem; color:#64748b; white-space:nowrap; padding-top:4px;
+}
+.st-dot       { width:9px; height:9px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
+.st-dot.ring  { background:#ef4444; animation:blink .55s infinite; }
+
+/* PERM block */
+.perm-wrap {
+  display:flex; align-items:center; gap:10px;
+  background:#f5f3ff; border:1px solid #ddd6fe; border-radius:7px;
+  padding:11px 13px; margin-bottom:12px;
+}
+.perm-ico { font-size:1.35rem; }
+.perm-txt { font-size:.84rem; font-weight:700; color:#6d28d9; }
+.perm-sub { font-size:.69rem; color:#a78bfa; margin-top:1px; }
+
+/* ── BOTONES: pegados al fondo, línea entera ── */
+.c-btns {
+  display:flex; margin-top:10px;
+  border-top:1px solid #e2e8f0;
+  border-radius:0 0 7px 7px;
+  overflow:hidden;
+}
+.c-btns .btn {
+  flex:1; padding:11px 8px; border:none; border-radius:0;
+  font-size:.85rem; font-weight:700; cursor:pointer;
+  transition:filter .15s;
+}
+.c-btns .btn:hover { filter:brightness(1.07); }
+.btn-sil-act { background:#e2e8f0; color:#64748b; display:none; }   /* silenciar — visible cuando alarma suena */
+.btn-no-alm  { background:#e2e8f0; color:#94a3b8; cursor:default; } /* "Sin Alarma" plano */
+.btn-del     { background:linear-gradient(135deg,#e0306a,#b81050); color:#fff; }
+
+/* ── PIE: fecha de publicación ── */
+.emit-foot {
+  padding:5px 13px 6px;
+  background:#f8fafc; border-top:1px solid #e2e8f0;
+  font-size:.7rem; color:#94a3b8;
+  display:flex; align-items:center; gap:5px;
+  border-radius:0 0 7px 7px;
+}
+.emit-foot b { font-family:'Courier New',monospace; color:#475569; font-weight:700; }
+/* ── AUTO-FETCH PANEL ───────────────────── */
+.fetch-panel {
+  margin-top:14px;
+  background:#f0f4fc;
+  border:1px solid #c8d8f0;
+  border-radius:8px;
+  overflow:hidden;
+}
+.fetch-hdr {
+  padding:9px 12px;
+  background:linear-gradient(135deg,#1c2e4a,#2a4060);
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; user-select:none;
+}
+.fetch-hdr-title {
+  color:#fff; font-size:.82rem; font-weight:700;
+  display:flex; align-items:center; gap:6px;
+}
+.fetch-hdr-arrow { color:#a8c0d8; font-size:.75rem; transition:transform .2s; }
+.fetch-hdr-arrow.open { transform:rotate(180deg); }
+.fetch-body { padding:12px; display:none; }
+.fetch-body.open { display:block; }
+
+.fetch-label { font-size:.72rem; color:#4a5a6a; font-weight:600; margin-bottom:5px; }
+.fetch-icao-wrap {
+  display:flex; gap:6px; margin-bottom:10px;
+}
+.fetch-icao-wrap input {
+  flex:1; padding:7px 10px; border:1px solid #c8d0e0; border-radius:6px;
+  font-family:'Courier New',monospace; font-size:.78rem; color:#1c2e4a;
+  background:#fff; outline:none; text-transform:uppercase;
+}
+.fetch-icao-wrap input:focus { border-color:#4a7fc0; }
+
+.btn-fetch {
+  background:linear-gradient(135deg,#1c2e4a,#2a4060);
+  color:#fff; border:none; border-radius:6px;
+  padding:7px 14px; font-size:.8rem; font-weight:700;
+  cursor:pointer; white-space:nowrap; transition:filter .15s;
+}
+.btn-fetch:hover { filter:brightness(1.15); }
+.btn-fetch:disabled { opacity:.55; cursor:not-allowed; }
+
+.fetch-chips {
+  display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;
+}
+.btn-fetch-all {
+  width:100%; padding:10px; border:none; border-radius:7px;
+  background:linear-gradient(135deg,#1c2e4a,#2563eb);
+  color:#fff; font-size:.84rem; font-weight:700; cursor:pointer;
+  transition:filter .15s; letter-spacing:.02em;
+}
+.btn-fetch-all:hover { filter:brightness(1.1); }
+.btn-fetch-all:disabled { opacity:.55; cursor:not-allowed; }
+
+.chip-group-label {
+  font-size:.63rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.1em; color:#94a3b8; margin-bottom:4px; margin-top:4px;
+}
+.chip {
+  padding:3px 9px; border-radius:20px; font-size:.69rem; font-weight:700;
+  cursor:pointer; transition:all .15s; font-family:'Courier New',monospace;
+  user-select:none;
+}
+.chip-int { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+.chip-int:hover,.chip-int.sel { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+.chip-nat { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+.chip-nat:hover,.chip-nat.sel { background:#d97706; color:#fff; border-color:#d97706; }
+
+.fetch-status {
+  font-size:.72rem; color:#4a5a6a; min-height:18px;
+  display:flex; align-items:center; gap:5px; margin-bottom:6px;
+}
+.spin { display:inline-block; animation:spin360 .8s linear infinite; }
+@keyframes spin360 { to{transform:rotate(360deg)} }
+.fetch-ok   { color:#16a34a; }
+.fetch-err  { color:#dc2626; }
+.fetch-info { color:#2563eb; }
+
+.auto-refresh-row {
+  display:flex; align-items:center; gap:8px;
+  font-size:.72rem; color:#4a5a6a;
+}
+.toggle-sw {
+  position:relative; width:34px; height:18px; flex-shrink:0;
+}
+.toggle-sw input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; background:#c8d0e0; border-radius:20px;
+  cursor:pointer; transition:.2s;
+}
+.toggle-slider:before {
+  content:''; position:absolute; width:14px; height:14px;
+  border-radius:50%; background:#fff;
+  left:2px; top:2px; transition:.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.toggle-sw input:checked + .toggle-slider { background:#2563eb; }
+.toggle-sw input:checked + .toggle-slider:before { transform:translateX(16px); }
+
+.btn-diag {
+  width:100%; padding:7px; border:none; border-radius:6px;
+  background:#f0f4fc; border:1px solid #c8d8f0;
+  color:#1c2e4a; font-size:.78rem; font-weight:700;
+  cursor:pointer; transition:filter .15s; margin-top:6px;
+}
+.btn-diag:hover { filter:brightness(.95); }
+.btn-diag:disabled { opacity:.5; cursor:not-allowed; }
+
+.filter-bar {
+  display:flex; align-items:center; gap:7px; padding:9px 14px 8px;
+  background:#f4f7fc; border-bottom:2px solid #e0e8f4; flex-wrap:wrap;
+}
+.filter-label { font-size:.68rem; color:#6b7a9a; font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em; margin-right:2px; }
+.filter-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 13px; border-radius:20px; font-size:.72rem; font-weight:700;
+  border:2px solid #d0d8f0; background:#fff; color:#4a6a9a;
+  cursor:pointer; transition:all .18s; white-space:nowrap;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+}
+.filter-btn svg { flex-shrink:0; }
+.filter-btn:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.12); }
+.filter-btn:active { transform:translateY(0); }
+
+/* TODOS — azul marino */
+.filter-btn.f-todos { border-color:#94a3b8; color:#334155; }
+.filter-btn.f-todos:hover { border-color:#1c2e4a; background:#eef2fb; }
+.filter-btn.f-todos.active { background:#1c2e4a; color:#fff; border-color:#1c2e4a; box-shadow:0 2px 8px rgba(28,46,74,.3); }
+
+/* CON EST — verde esmeralda */
+.filter-btn.f-est { border-color:#6ee7b7; color:#065f46; }
+.filter-btn.f-est:hover { border-color:#10b981; background:#ecfdf5; }
+.filter-btn.f-est.active { background:linear-gradient(135deg,#059669,#10b981); color:#fff; border-color:#059669; box-shadow:0 2px 8px rgba(16,185,129,.35); }
+
+/* SIN EST — violeta */
+.filter-btn.f-sino { border-color:#c4b5fd; color:#5b21b6; }
+.filter-btn.f-sino:hover { border-color:#7c3aed; background:#f5f3ff; }
+.filter-btn.f-sino.active { background:linear-gradient(135deg,#6d28d9,#7c3aed); color:#fff; border-color:#6d28d9; box-shadow:0 2px 8px rgba(109,40,217,.35); }
+
+/* PERM — celeste/cyan */
+.filter-btn.f-perm { border-color:#7dd3fc; color:#0c4a6e; }
+.filter-btn.f-perm:hover { border-color:#0ea5e9; background:#f0f9ff; }
+.filter-btn.f-perm.active { background:linear-gradient(135deg,#0369a1,#0ea5e9); color:#fff; border-color:#0369a1; box-shadow:0 2px 8px rgba(14,165,233,.35); }
+
+/* ── Search filter inputs ── */
+.filter-search-row {
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  padding:7px 14px 8px; background:#f8fafc;
+  border-bottom:1px solid #e0e8f4;
+}
+.fsearch-wrap {
+  display:flex; align-items:center; gap:0;
+  border:1.5px solid #c8d4f0; border-radius:20px;
+  background:#fff; overflow:hidden; flex:1; min-width:140px; max-width:220px;
+  transition:border-color .15s;
+}
+.fsearch-wrap:focus-within { border-color:#4a7fc0; }
+.fsearch-icon {
+  padding:0 8px 0 10px; color:#94a3b8; font-size:.8rem; user-select:none;
+}
+.fsearch-input {
+  flex:1; border:none; outline:none; padding:5px 10px 5px 0;
+  font-family:'Courier New',monospace; font-size:.75rem; font-weight:700;
+  color:#1c2e4a; background:transparent; text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.fsearch-input::placeholder { color:#b0bcc8; font-family:Arial,sans-serif;
+  font-weight:400; text-transform:none; letter-spacing:0; font-size:.72rem; }
+.fsearch-clear {
+  padding:0 9px; color:#b0bcc8; cursor:pointer; font-size:.9rem;
+  user-select:none; transition:color .15s;
+}
+.fsearch-clear:hover { color:#e03050; }
+.fsearch-count { font-size:.67rem; color:#94a3b8; white-space:nowrap; }
+
+/* ── TOAST ──────────────────────────────── */
+.toast {
+  position:fixed; bottom:20px; right:20px; z-index:9999;
+  background:#1c2e4a; color:#fff;
+  border-radius:9px; padding:11px 18px; font-size:.8rem; max-width:360px;
+  box-shadow:0 6px 24px rgba(0,0,0,.25); border-left:4px solid #4a7fc0;
+  opacity:0; transform:translateY(12px); transition:all .25s;
+}
+.toast.show { opacity:1; transform:translateY(0); }
+.toast.ok   { border-left-color:#4de89c; }
+.toast.err  { border-left-color:#e03050; }
+
+@media(max-width:860px) {
+  .cols {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Disable sticky panel headers on mobile */
+  .left-sticky-col { position: static !important; }
+  .ph, .board-ph, .filter-bar, .filter-search-row { position: static !important; }
+  /* Leyenda oculta en móvil */
+  .leg-title, .leg-row, .leg-ex { display:none; }
+  /* Info boxes more compact */
+  .ibox { padding:7px 10px; font-size:.72rem; }
+  /* Filter bar wraps nicely */
+  .filter-bar { gap:5px; padding:7px 10px; }
+  .filter-btn { padding:4px 10px; font-size:.68rem; }
+  .filter-search-row { flex-direction:column; align-items:stretch; gap:6px; padding:8px 10px; }
+  .fsearch-wrap { max-width:100% !important; }
+  /* Board full width */
+  .board-body { flex:none; overflow-y:visible; }
+  .right-panel { height:auto; position:static; }
+  /* Reduce card padding */
+  .c-head { padding:8px 10px; }
+  .raw-notam-box { padding:8px 10px; font-size:.7rem; }
+  .c-bottom { padding:10px 10px 0; }
+  .c-btns .btn { padding:10px 6px; font-size:.8rem; }
+}
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
   <div class="save-ind"><span class="save-dot"></span> Guardando...</div>
-  <h1>NOTAM ALARM — FIR SPIM</h1>
-  <p>Sistema de Alarmas NOTAM en Tiempo Real — Fuente: CORPAC S.A.</p>
+  <h1>Monitoreo de NOTAM FIR SPIM</h1>
+  <p>Sistema de Gestión y Alarmas de NOTAMs en Tiempo Real — Fuente: CORPAC S.A.</p>
 </div>
 
+<!-- UTC BAR -->
 <div class="utc-bar">
   <span class="utc-lbl">Hora UTC</span>
   <span class="utc-val" id="utcClock">--:--:--</span>
   <span class="utc-lbl" id="utcDate" style="margin-left:4px;"></span>
 </div>
 
+<!-- MAIN -->
 <div class="wrap">
   <div class="cols">
 
-    <!-- LEFT: ENTRADA -->
+    <!-- ════ LEFT: ENTRADA ════ -->
     <div class="left-sticky-col">
       <div class="panel">
         <div class="ph">
@@ -220,35 +668,162 @@ textarea::placeholder{color:#a0aab8}
           <h2>Entrada de NOTAMs</h2>
         </div>
         <div class="left-body">
-          <textarea id="txtInput" placeholder="Pegue aquí NOTAMs o use la búsqueda automática"></textarea>
+
+          <textarea id="txtInput"
+            placeholder="Pegue aquí el PIB de CORPAC o NOTAMs en formato estándar:
+
+── FORMATO CORPAC (extranet.corpac.gob.pe) ──
+PERU - SPHY - ANDAHUAYLAS
+C4854/25 |        B) 2512301520 C) 2603301800 EST
+ILS/DME IAND FREQ 109.700MHZ CH34X U/S
+
+PERU - SPJC - LIMA
+A0858/26 |        B) 2604010630 C) 2604130930 D) 0630-0930
+RWY 16R/34L CLSD DUE TO WIP
+
+── FORMATO ESTÁNDAR OACI ──
+C4129/24 NOTAMN
+A) SPHY  B) 2412171800  C) PERM
+E) RFFS SE REDUJO A CAT 5"></textarea>
+
           <div class="btn-row">
             <button class="btn btn-proc" onclick="procesar()">Procesar NOTAMs</button>
-            <button class="btn btn-clr" onclick="limpiar()">Limpiar Todo</button>
+            <button class="btn btn-clr"  onclick="limpiar()">Limpiar Todo</button>
           </div>
 
-          <div class="ibox ib-g" style="margin-top:12px;">
-            <div class="title">⚡ Búsqueda Automática CORPAC</div>
-            La API se actualiza <b>cada 1 minuto</b> automáticamente.<br>
-            Fuente: <b>appoperacional.corpac.gob.pe</b> — NOTAM Distribución
+          <div class="leg-title">Identificación del NOTAM:</div>
+          <div class="leg-row"><span class="hl-y">A####/YYYY</span> Internacional</div>
+          <div class="leg-row"><span class="hl-g">C####/YYYY</span> Nacional</div>
+          <div class="leg-ex">Ej: A3199/2025 &nbsp;|&nbsp; C4129/24</div>
+
+          <div class="ibox ib-p" style="margin-top:12px;">
+            <div class="title">📋 Formatos aceptados</div>
+            <b>🇵🇪 CORPAC</b> (PIB de extranet.corpac.gob.pe):<br>
+            &nbsp;&nbsp;Pegar el boletín completo — se detecta automáticamente<br>
+            <br>
+            <b>🌐 Estándar OACI</b>:<br>
+            &nbsp;&nbsp;<b>B)</b> Inicio &nbsp;|&nbsp; <b>C)</b> Fin <span class="tag tg">EST</span>/sin EST/<span class="tag tp">PERM</span><br>
+            &nbsp;&nbsp;<b>Q)</b> FIR/CódQ &nbsp;|&nbsp; <b>E)</b> Descripción
+          </div>
+          <div class="ibox" style="margin-top:6px;background:#fff8e8;border:1px solid #f0a000;border-left:4px solid #e07a00;color:#5a3a00;">
+            <div class="title">⚠ IMPORTANTE</div>
+            El formato <b>CORPAC</b> no incluye el tipo de NOTAM en el texto. Para identificar si es
+            <b>NOTAM N</b> (nuevo) o <b>NOTAM R</b> (reemplaza), consulte el boletín original en
+            <b>extranet.corpac.gob.pe</b> o pegue el texto en formato estándar OACI donde
+            el tipo sí aparece explícito (ej: <code>C4854/25 NOTAMR C3568/25</code>).
           </div>
 
-          <!-- AUTO-FETCH PANEL -->
+          <div class="ibox ib-g">
+            <div class="title">⚡ Alarma automática</div>
+            Solo si <b>C)</b> termina en <span class="tag tg">EST</span>.
+            Alarma audible a los <span class="tag ty">10 minutos</span>.
+            Reloj <b style="color:#1a70c0;">azul</b> → <b style="color:#e03050;">rojo</b> al quedar menos de 1 hora.
+          </div>
+
+          <div class="ibox ib-o">
+            <div class="title">📌 Separación automática</div>
+            Pegue varios NOTAMs juntos — se separan automáticamente por el identificador
+            <b>A####/YY</b> o <b>C####/YY</b>.
+          </div>
+
+          <!-- ═══ AUTO-FETCH ═══ -->
           <div class="fetch-panel" style="margin-top:14px;">
             <div class="fetch-hdr" onclick="toggleFetchPanel()">
-              <div class="fetch-hdr-title">🛰 Búsqueda Automática — CORPAC API</div>
+              <div class="fetch-hdr-title">
+                🛰 Búsqueda Automática — NOTAMs en Tiempo Real
+              </div>
               <span class="fetch-hdr-arrow open" id="fetchArrow">▼</span>
             </div>
             <div class="fetch-body open" id="fetchBody">
-              <button class="btn-fetch-all" onclick="fetchFIR()">🌐 Cargar todos los NOTAMs FIR SPIM desde CORPAC</button>
+
+              <!-- Botón buscar FIR completa -->
+              <button class="btn-fetch-all" onclick="fetchFirCompleta()">
+                🌐 Buscar todos los NOTAMs FIR SPIM
+              </button>
+
+              <div class="fetch-label" style="margin-top:10px;">O seleccione aeródromos específicos:</div>
+
+              <!-- Chips agrupados -->
+              <div class="chip-group-label">Internacionales</div>
+              <div class="fetch-chips" id="chipsInternacional">
+                <span class="chip chip-int" onclick="toggleChip(this,'SPJC')">SPJC</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPQT')">SPQT</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPTN')">SPTN</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPQU')">SPQU</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPHI')">SPHI</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPCL')">SPCL</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPYL')">SPYL</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPZO')">SPZO</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPRU')">SPRU</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPJL')">SPJL</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPTU')">SPTU</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPUR')">SPUR</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPME')">SPME</span>
+                <span class="chip chip-int" onclick="toggleChip(this,'SPLP')">SPLP</span>
+              </div>
+              <div class="chip-group-label">Nacionales</div>
+              <div class="fetch-chips" id="chipsNacional">
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPHY')">SPHY</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJR')">SPJR</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPEO')">SPEO</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPST')">SPST</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPHZ')">SPHZ</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJJ')">SPJJ</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPMS')">SPMS</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPNC')">SPNC</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPHO')">SPHO</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPZA')">SPZA</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJE')">SPJE</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPPY')">SPPY</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPSO')">SPSO</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPCH')">SPCH</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPGM')">SPGM</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJA')">SPJA</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPBC')">SPBC</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJN')">SPJN</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPMF')">SPMF</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPRM')">SPRM</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPAS')">SPAS</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPDR')">SPDR</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPQN')">SPQN</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPBL')">SPBL</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPBB')">SPBB</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPJI')">SPJI</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPIL')">SPIL</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPWT')">SPWT</span>
+                <span class="chip chip-nat" onclick="toggleChip(this,'SPLX')">SPLX</span>
+              </div>
+
+              <!-- Barra de búsqueda manual -->
+              <div class="fetch-label" style="margin-top:8px;">O ingrese códigos manualmente:</div>
+              <div class="fetch-icao-wrap">
+                <input type="text" id="fetchIcao" placeholder="SPIM,SPJC,..." style="text-transform:uppercase;">
+                <button class="btn-fetch" id="btnFetch" onclick="fetchSeleccionados()">🔍 Buscar</button>
+              </div>
+
               <div class="fetch-status" id="fetchStatus"></div>
+
+              <!-- Botón de diagnóstico -->
+              <button class="btn-diag" id="btnDiag" onclick="diagnosticar()">
+                🔬 Probar conexión
+              </button>
+              <div id="diagResult" style="font-size:.67rem;color:#7a8a9a;margin:5px 0 8px;line-height:1.5;"></div>
+
+              <div style="font-size:.67rem;color:#7a8a9a;margin-bottom:8px;line-height:1.5;">
+                📡 Fuente: <b>CORPAC API</b> — Datos en tiempo real de NOTAM Distribucion.<br>
+                🔄 Actualización automática cada 60 segundos cuando está activado.<br>
+                ⚠ Alarma EST automática disponible para todos los NOTAMs.
+              </div>
+
               <div class="auto-refresh-row">
                 <label class="toggle-sw">
-                  <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                  <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
                   <span class="toggle-slider"></span>
                 </label>
-                <span>Auto-actualizar cada <b>1 min</b></span>
+                <span>Auto-actualizar cada <b>60 seg</b></span>
                 <span id="nextRefreshLabel" style="color:#9ca3af;margin-left:4px;"></span>
               </div>
+
             </div>
           </div>
 
@@ -256,7 +831,7 @@ textarea::placeholder{color:#a0aab8}
       </div>
     </div>
 
-    <!-- RIGHT: PIZARRA -->
+    <!-- ════ RIGHT: PIZARRA ════ -->
     <div class="panel right-panel">
       <div class="board-ph">
         <div class="board-ph-left">
@@ -265,44 +840,118 @@ textarea::placeholder{color:#a0aab8}
           <span class="board-count" id="boardCount"></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span class="sort-badge">Ordenado por Vencimiento</span>
+          <span class="sort-badge" id="sortBadge" onclick="toggleSort()" style="cursor:pointer;" title="Click para cambiar orden">Ordenado por Vencimiento</span>
           <div class="nav-arrows" id="navArrows">
-            <button class="nav-btn" id="navUp" onclick="navNotam(-1)">▲</button>
+            <button class="nav-btn" id="navUp"   onclick="navNotam(-1)" title="NOTAM anterior (↑)">▲</button>
             <span class="nav-pos" id="navPos">1/1</span>
-            <button class="nav-btn" id="navDown" onclick="navNotam(1)">▼</button>
+            <button class="nav-btn" id="navDown" onclick="navNotam(1)"  title="NOTAM siguiente (↓)">▼</button>
           </div>
         </div>
       </div>
+      <!-- Barra de filtros -->
       <div class="filter-bar">
         <span class="filter-label">Filtrar:</span>
-        <button class="filter-btn f-todos active" id="fbTodos" onclick="setFiltro('todos')">☰ Todos</button>
-        <button class="filter-btn f-est" id="fbEst" onclick="setFiltro('est')">⏰ Con EST</button>
-        <button class="filter-btn f-sino" id="fbSino" onclick="setFiltro('sino')">⊘ Sin EST</button>
-        <button class="filter-btn f-perm" id="fbPerm" onclick="setFiltro('perm')">♾ PERM</button>
+
+        <!-- TODOS -->
+        <button class="filter-btn f-todos active" id="fbTodos" onclick="setFiltro('todos')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="2" width="14" height="2.5" rx="1.2" fill="currentColor"/>
+            <rect x="1" y="6.8" width="10" height="2.5" rx="1.2" fill="currentColor"/>
+            <rect x="1" y="11.5" width="12" height="2.5" rx="1.2" fill="currentColor"/>
+          </svg>
+          Todos
+        </button>
+
+        <!-- CON EST -->
+        <button class="filter-btn f-est" id="fbEst" onclick="setFiltro('est')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1a5 5 0 0 0-5 5c0 3-1.5 4-1.5 4h13S13 9 13 6a5 5 0 0 0-5-5z" fill="currentColor"/>
+            <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            <circle cx="12" cy="4" r="2.5" fill="#22c55e" stroke="#fff" stroke-width="1"/>
+          </svg>
+          Con EST
+        </button>
+
+        <!-- SIN EST -->
+        <button class="filter-btn f-sino" id="fbSino" onclick="setFiltro('sino')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1a5 5 0 0 0-5 5c0 3-1.5 4-1.5 4h13S13 9 13 6a5 5 0 0 0-5-5z" fill="currentColor" opacity=".45"/>
+            <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Sin EST
+        </button>
+
+        <!-- PERM -->
+        <button class="filter-btn f-perm" id="fbPerm" onclick="setFiltro('perm')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M1.5 8C1.5 8 3 4.5 5.5 4.5S8 7 8 8s1 3.5 2.5 3.5S14.5 8 14.5 8s-1.5-3.5-4-3.5S8 7 8 8 7 11.5 5.5 11.5 1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+          PERM
+        </button>
+
       </div>
+      <!-- Búsqueda por aeródromo y código Q -->
       <div class="filter-search-row">
         <div class="fsearch-wrap">
-          <input class="fsearch-input" id="filtroAero" maxlength="4" placeholder="Aeródromo OACI" oninput="aplicarBusqueda()" autocomplete="off">
-          <span class="fsearch-clear" onclick="limpiarFiltro('filtroAero')">✕</span>
+          <span class="fsearch-icon">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="5" width="14" height="2" rx="1" fill="#64748b"/>
+              <rect x="4" y="9" width="8" height="2" rx="1" fill="#64748b"/>
+              <rect x="7" y="1" width="2" height="14" rx="1" fill="#64748b" opacity=".5"/>
+              <circle cx="5" cy="6" r="1.5" fill="#2563eb"/>
+            </svg>
+          </span>
+          <input class="fsearch-input" id="filtroAero" maxlength="4"
+            placeholder="Aeródromo OACI" oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroAero')" title="Limpiar">✕</span>
         </div>
         <div class="fsearch-wrap">
-          <input class="fsearch-input" id="filtroQ" maxlength="12" placeholder="Código Q" oninput="aplicarBusqueda()" autocomplete="off">
-          <span class="fsearch-clear" onclick="limpiarFiltro('filtroQ')">✕</span>
+          <span class="fsearch-icon">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="#64748b" stroke-width="1.6" fill="none"/>
+              <text x="8" y="11.5" text-anchor="middle" font-size="7" font-weight="700" fill="#2563eb" font-family="monospace">Q</text>
+            </svg>
+          </span>
+          <input class="fsearch-input" id="filtroQ" maxlength="12"
+            placeholder="Código Q (ej: QFAXX)" oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroQ')" title="Limpiar">✕</span>
         </div>
+        <!-- Búsqueda por texto E) -->
         <div class="fsearch-wrap" style="flex:2;max-width:340px;">
-          <input class="fsearch-input" id="filtroTexto" placeholder="Buscar en descripción..." oninput="aplicarBusqueda()" autocomplete="off" style="text-transform:none;letter-spacing:0;font-family:Arial,sans-serif;font-size:.73rem;">
-          <span class="fsearch-clear" onclick="limpiarFiltro('filtroTexto')">✕</span>
+          <span class="fsearch-icon">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="#64748b" stroke-width="1.6" fill="none"/>
+              <line x1="10" y1="10" x2="14.5" y2="14.5" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="4" y1="6.5" x2="9" y2="6.5" stroke="#64748b" stroke-width="1.2" stroke-linecap="round"/>
+              <line x1="6.5" y1="4" x2="6.5" y2="9" stroke="#64748b" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input class="fsearch-input" id="filtroTexto"
+            placeholder="Buscar en descripción E)..."
+            oninput="aplicarBusqueda()" autocomplete="off"
+            style="text-transform:none;letter-spacing:0;font-family:Arial,sans-serif;font-size:.73rem;">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroTexto')" title="Limpiar">✕</span>
         </div>
+        <!-- Filtro por número de NOTAM -->
         <div class="fsearch-wrap" style="min-width:140px;max-width:180px;">
-          <input class="fsearch-input" id="filtroNumero" maxlength="12" placeholder="Nº NOTAM" oninput="aplicarBusqueda()" autocomplete="off">
-          <span class="fsearch-clear" onclick="limpiarFiltro('filtroNumero')">✕</span>
+          <span class="fsearch-icon">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="1" width="14" height="14" rx="3" stroke="#64748b" stroke-width="1.5" fill="none"/>
+              <text x="8" y="11" text-anchor="middle" font-size="8" font-weight="800" fill="#2563eb" font-family="monospace">#</text>
+            </svg>
+          </span>
+          <input class="fsearch-input" id="filtroNumero" maxlength="12"
+            placeholder="Nº NOTAM (0864)"
+            oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroNumero')" title="Limpiar">✕</span>
         </div>
         <span class="fsearch-count" id="filtroCount"></span>
       </div>
       <div class="board-body" id="board">
         <div class="empty-s">
           <div class="ei">📡</div>
-          <p>Cargando NOTAMs desde CORPAC...</p>
+          <p>Sin NOTAMs en pizarra.<br>Pegue y procese un NOTAM para comenzar.</p>
         </div>
       </div>
     </div>
@@ -313,242 +962,1572 @@ textarea::placeholder{color:#a0aab8}
 <div class="toast" id="toast"></div>
 
 <script>
-var SK='notam_alarm_v2';
-var notams=[];
-var alarmas={};
-var alarmaON={};
-var actx=null;
-var filtroActual='todos';
-var autoRefreshTimer=null;
-var AUTO_REFRESH_MS=60000;
-var API_BASE=window.location.origin;
-var navIdx=0;
+/* ══════════════════════════════════════════════
+   ESTADO
+══════════════════════════════════════════════ */
+var SK = 'notam_v8';
+var notams = [];
+var alarmas = {};       // idx → intervalId
+var alarmaON = {};      // idx → bool
+var actx = null;
+var filtroActual = 'todos';   // 'todos' | 'est' | 'sino' | 'perm'
+var sortMode = 'expiration';  // 'expiration' | 'publication'
 
-function guardar(){try{localStorage.setItem(SK,JSON.stringify(notams))}catch(e){}}
-function cargar(){try{var d=localStorage.getItem(SK);if(d)notams=JSON.parse(d)}catch(e){notams=[]}}
+/* ══════════════════════════════════════════════
+   PERSISTENCIA
+══════════════════════════════════════════════ */
+function guardar(){ try{ localStorage.setItem(SK, JSON.stringify(notams)); localStorage.setItem(SK+'_sort', sortMode); }catch(e){} }
+function cargar(){  try{ var d=localStorage.getItem(SK); if(d) notams=JSON.parse(d); }catch(e){ notams=[]; }
+  try{ var sm=localStorage.getItem(SK+'_sort'); if(sm) sortMode=sm; }catch(e){}
+}
 
+/* ══════════════════════════════════════════════
+   RELOJ UTC GLOBAL
+══════════════════════════════════════════════ */
 function tickUtc(){
-  var n=new Date(),p=function(x){return('0'+x).slice(-2)};
-  document.getElementById('utcClock').textContent=p(n.getUTCHours())+':'+p(n.getUTCMinutes())+':'+p(n.getUTCSeconds());
+  var n=new Date(), p=function(x){return ('0'+x).slice(-2);};
+  document.getElementById('utcClock').textContent =
+    p(n.getUTCHours())+':'+p(n.getUTCMinutes())+':'+p(n.getUTCSeconds());
   var M=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  document.getElementById('utcDate').textContent=p(n.getUTCDate())+' '+M[n.getUTCMonth()]+' '+n.getUTCFullYear();
+  document.getElementById('utcDate').textContent =
+    p(n.getUTCDate())+' '+M[n.getUTCMonth()]+' '+n.getUTCFullYear();
 }
-setInterval(tickUtc,1000);tickUtc();
+setInterval(tickUtc, 1000);
+tickUtc();
 
-var RE_ID=/\b([AC])(\d{4})\/((\d{4})|(\d{2}))\b/;
-function pId(txt){var m=txt.match(RE_ID);if(!m)return null;var yr=m[3].length===2?'20'+m[3]:m[3];return{raw:m[1]+m[2]+'/'+m[3],disp:m[1]+m[2]+'/'+yr,serie:m[1],num:m[2]}}
-function s10(s){if(!s||s.length!==10)return null;var d=new Date(Date.UTC(2000+~~s.slice(0,2),~~s.slice(2,4)-1,~~s.slice(4,6),~~s.slice(6,8),~~s.slice(8,10)));return isNaN(d)?null:d.getTime()}
-function pB(txt){var m=txt.match(/\bB\)\s*(\d{10})/i);if(!m)return null;var ts=s10(m[1]);return ts?{ts:ts,raw:m[1]}:null}
-function pC(txt){if(/\bC\)\s*PERM\b/i.test(txt))return{perm:true,ts:null,est:false,raw:'PERM'};var m=txt.match(/\bC\)\s*(\d{10})\s*(EST)?/i);if(!m)return null;var ts=s10(m[1]);if(!ts)return null;return{perm:false,ts:ts,est:!!m[2],raw:m[1]}}
-function pA(txt){var m=txt.match(/\bA\)\s*([^\r\n]+)/i);if(!m)return null;var tokens=m[1].match(/\b([A-Z]{4})\b/g);if(!tokens)return null;tokens=tokens.filter(function(t){return/^[A-Z]{4}$/.test(t)});return tokens.length?tokens.join(' '):null}
-function pQ(txt){var m=txt.match(/\bQ\)\s*([A-Z]{4})\/([A-Z0-9]+)/i);return m?{fir:m[1],q:m[2]}:null}
-function pE(txt){var m=txt.match(/\bE\)\s*([\s\S]+?)(?=\r?\n[A-GN]\)|\r?\nNOTAMR|\r?\nNOTAMC|$)/i);return m?m[1].replace(/\s+$/,''):null}
-function pTipo(txt){var m=txt.match(/\b(NOTAMR|NOTAMN|NOTAMC)\s*([AC]\d{4}\/\d{2,4})?/i);if(!m)return null;return{tipo:m[1].toUpperCase(),ref:m[2]||null}}
+/* ══════════════════════════════════════════════
+   PARSERS
+══════════════════════════════════════════════ */
+var RE_ID = /\b([AC])(\d{4})\/((\d{4})|(\d{2}))\b/;
 
-function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
-
-function parseFullNotam(rawText,idx){
-  var id=pId(rawText);if(!id)return null;
-  var b=pB(rawText),c=pC(rawText),a=pA(rawText),q=pQ(rawText),e=pE(rawText),tipo=pTipo(rawText);
-  var now=Date.now();
-  var status='active',statusLabel='ACTIVO',statusCls='b-act';
-  if(c){if(c.perm){status='perm';statusLabel='PERM';statusCls='b-perm'}else if(c.ts<=now){status='expired';statusLabel='VENCIDO';statusCls='b-exp'}else if(c.ts-now<3600000){status='urgent';statusLabel='<1H';statusCls='b-mas-urg'}else if(c.ts-now<7200000){status='soon';statusLabel='<2H';statusCls='b-urg'}else{status='prox';statusLabel='PRÓXIMO';statusCls='b-prox'}}
-  else if(b){if(b.ts>now)status='active';else status='expired'}
-  var estLabel=null;if(c&&c.est)estLabel='CON EST';else if(c&&!c.est&&!c.perm)estLabel='SIN EST';
-  var cls='ncard';if(id.serie==='C')cls+=' serie-C';if(status==='expired')cls+=' expired';
-  return{id:id.raw,disp:id.disp,serie:id.serie,num:id.num,aero:a||'',q:q||{},e:e||'',b:b,c:c,tipo:tipo||{tipo:'NOTAMN',ref:null},estLabel:estLabel,status:status,statusLabel:statusLabel,statusCls:statusCls,cls:cls,raw:rawText,idx:idx};
+function pId(txt){
+  var m=txt.match(RE_ID); if(!m) return null;
+  var yr = m[3].length===2 ? '20'+m[3] : m[3];
+  return { raw:m[1]+m[2]+'/'+m[3], disp:m[1]+m[2]+'/'+yr, serie:m[1], num:m[2] };
 }
 
-function renderCard(n){
-  var now=Date.now();
-  var clockHtml='',venceHtml='';
-  if(n.c){
-    if(n.c.perm){
-      clockHtml='<div class="perm-wrap"><span class="perm-ico">♾</span><div><div class="perm-txt">PERMANENTE</div><div class="perm-sub">Sin fecha de vencimiento</div></div></div>';
-    }else if(n.c.ts){
-      var rest=n.c.ts-now;
-      if(rest<=0){clockHtml='<div class="ck-display ck-gray">00:00:00</div><div class="ck-rest">VENCIDO</div>'}
-      else{
-        var hh=Math.floor(rest/3600000),mm=Math.floor((rest%3600000)/60000),ss=Math.floor((rest%60000)/1000);
-        var ckCls=rest<3600000?'ck-red':'ck-blue';
-        clockHtml='<div class="ck-display '+ckCls+'">'+('0'+hh).slice(-2)+':'+('0'+mm).slice(-2)+':'+('0'+ss).slice(-2)+'</div>';
-        var f=new Date(n.c.ts);
-        venceHtml='<div class="ck-vence">Vence: '+('0'+f.getUTCDate()).slice(-2)+'/'+('0'+(f.getUTCMonth()+1)).slice(-2)+'/'+f.getUTCFullYear()+' '+('0'+f.getUTCHours()).slice(-2)+':'+('0'+f.getUTCMinutes()).slice(-2)+' UTC</div>';
-      }
-    }
-  }else{
-    clockHtml='<div class="ck-display ck-gray">--:--:--</div><div class="ck-rest">Sin fecha de vencimiento</div>';
+function s10(s){
+  if(!s||s.length!==10) return null;
+  var d=new Date(Date.UTC(2000+~~s.slice(0,2), ~~s.slice(2,4)-1, ~~s.slice(4,6), ~~s.slice(6,8), ~~s.slice(8,10)));
+  return isNaN(d)?null:d.getTime();
+}
+
+function pB(txt){ var m=txt.match(/\bB\)\s*(\d{10})/i); if(!m)return null; var ts=s10(m[1]); return ts?{ts:ts,raw:m[1]}:null; }
+
+function pC(txt){
+  if(/\bC\)\s*PERM\b/i.test(txt)) return {perm:true,ts:null,est:false,raw:'PERM'};
+  var m=txt.match(/\bC\)\s*(\d{10})\s*(EST)?/i); if(!m)return null;
+  var ts=s10(m[1]); if(!ts)return null;
+  return {perm:false,ts:ts,est:!!m[2],raw:m[1]};
+}
+
+/* ══════════════════════════════════════════════
+   BASE DE DATOS DE AERÓDROMOS — FIR SPIM LIMA
+   Fuente: AIP PERU / OACI
+══════════════════════════════════════════════ */
+var FIR_SPIM = {
+  /* ══ FIR / ACC ══ */
+  'SPIM': 'FIR SPIM / ACC Lima',
+  'SPLP': 'Base Aérea Las Palmas — Chorrillos, Lima',
+
+  /* ══ INTERNACIONALES ══ */
+  'SPJC': 'Aeropuerto Internacional Jorge Chávez — Callao',
+  'SPQT': 'Aeropuerto Internacional Coronel FAP Francisco Secada Vignetta — Iquitos',
+  'SPTN': 'Aeropuerto Internacional Coronel FAP Carlos Ciriani Santa Rosa — Tacna',
+  'SPQU': 'Aeropuerto Internacional Alfredo Rodríguez Ballón — Arequipa',
+  'SPHI': 'Aeropuerto Internacional Capitán FAP José A. Quiñones — Chiclayo',
+  'SPCL': 'Aeropuerto Internacional Capitán FAP David Abensur Rengifo — Pucallpa',
+  'SPYL': 'Aeropuerto Internacional Capitán FAP Víctor Montes Arias — Talara',
+  'SPZO': 'Aeropuerto Internacional Alejandro Velasco Astete — Cusco',
+  'SPRU': 'Aeropuerto Internacional Capitán FAP Carlos Martínez de Pinillos — Trujillo',
+  'SPJL': 'Aeropuerto Internacional Inca Manco Cápac — Juliaca',
+  'SPTU': 'Aeropuerto Internacional Padre José de Adalmiz — Puerto Maldonado',
+  'SPUR': 'Aeropuerto Internacional Capitán FAP Guillermo Concha Ibérico — Piura',
+  'SPME': 'Aeropuerto Capitán FAP Pedro Canga Rodríguez — Tumbes',
+
+  /* ══ NACIONALES ══ */
+  'SPJR': 'Aeropuerto Mayor General FAP Armando Revoredo Iglesias — Cajamarca',
+  'SPEO': 'Aeropuerto Teniente FAP Jaime Montreuil Morales — Chimbote',
+  'SPST': 'Aeropuerto Comandante FAP Guillermo del Castillo Paredes — Tarapoto',
+  'SPHZ': 'Aeropuerto Comandante FAP Germán Arias Graziani — Anta/Huaraz',
+  'SPJJ': 'Aeropuerto Francisco Carlé — Jauja',
+  'SPMS': 'Aeropuerto Moisés Benzaquen Rengifo — Yurimaguas',
+  'SPNC': 'Aeropuerto Alf. FAP David Figueroa Fernandini — Huánuco',
+  'SPHO': 'Aeropuerto Coronel FAP Alfredo Mendivil Duarte — Ayacucho',
+  'SPZA': 'Aeropuerto María Reiche Neuman — Nazca',
+  'SPJI': 'Aeropuerto de Juanjuí — Juanjuí',
+  'SPJE': 'Aeropuerto de Shumba — Jaén',
+  'SPHY': 'Aeropuerto de Andahuaylas — Andahuaylas',
+  'SPPY': 'Aeropuerto de Chachapoyas — Chachapoyas',
+  'SPLO': 'Aeropuerto de Ilo — Ilo',
+  'SPSO': 'Aeropuerto Capitán FAP Renán Elías Olivera — Pisco',
+  'SPCH': 'Aeropuerto de Tocache — Tocache',
+  'SPGM': 'Aeropuerto de Tingo María — Tingo María',
+  'SPJA': 'Aeropuerto Juan Simons Vela — Rioja',
+  'SPBC': 'Aeropuerto de Caballococha — Ramón Castilla',
+  'SPJN': 'Aeropuerto de San Juan de Marcona — San Juan de Marcona',
+  'SPMF': 'Aeropuerto Manuel Prado Ugarteche — Mazamari',
+  'SPRM': 'Aeropuerto Capitán FAP Leonardo Alvariño Herr — San Ramón',
+  'SPIP': 'Aeropuerto de Satipo — Satipo',
+  'SPAS': 'Aeropuerto Alf. FAP Alfredo Vladimir Sara Bauer — Andoas',
+  'SPDR': 'Aeropuerto de Trompeteros — Corrientes',
+  'SPBS': 'Aeropuerto de Bellavista — Jeberos',
+  'SPQN': 'Aeropuerto de Requena — Requena',
+  'SPBR': 'Aeropuerto Tnte. Gral. Gerardo Pérez Pinedo — Iberia',
+  'SPAO': 'Aeropuerto San Juan de Aposento — Madre de Dios',
+  'SPSY': 'Aeropuerto de Shiringayoc — Madre de Dios',
+  'SPEQ': 'Aeropuerto César Torque Podesta — Moquegua',
+  'SPAR': 'Aeropuerto de Alerta — Ucayali',
+  'SPAY': 'Aeropuerto Tnte. Gral. Gerardo Pérez Pinedo — Atalaya',
+  'SPOA': 'Aeropuerto de Saposoa — Saposoa',
+  'SPIZ': 'Aeropuerto de Uchiza — Uchiza',
+  'SPBL': 'Aeropuerto de Huallaga — Bellavista',
+  'SPBB': 'Aeropuerto de Moyobamba — Moyobamba',
+  'SPJI': 'Aeropuerto de Juanjuí — Juanjuí',
+  'SPIL': 'Aeropuerto Quince Mil — Camanti, Cusco',
+  'SPCM': 'Aeropuerto de Contamana — Contamana',
+  'SPMR': 'Aeropuerto de Santa María — Santa María del Mar',
+  'SPDO': 'Aeropuerto de Mollendo — Mollendo',
+  'SPBQ': 'Aeropuerto de Nuevo Acarí — Bella Unión',
+  'SPLC': 'Aeropuerto Mariano Melgar — La Joya',
+  'SPVT': 'Aeropuerto Mayor FAP Guillermo Protset del Castillo — Vítor',
+  'SPJB': 'Aeropuerto de Pampa Grande — Cajabamba',
+  'SPSP': 'Aeropuerto de San Pablo — San Pablo',
+  'SPHV': 'Aeropuerto de Huánuco Viejo — Huánuco Pampa',
+  'SPTP': 'Base Aérea El Pato — Talara',
+  'SPOV': 'Aeropuerto de Shiringayoc/Hacienda Mejia — León-Velarde',
+  'SPVR': 'Aeropuerto San Isidoro — Vítor',
+  'SPPE': 'Aeropuerto Internacional Capitán FAP Guillermo Concha Ibérico — Piura',
+  'SPPY': 'Aeropuerto de Chachapoyas — Chachapoyas',
+  'SPWT': 'Aeropuerto Las Malvinas — Las Malvinas',
+  'SPLX': 'Aeropuerto Lib Mandi — Lib Mandi',
+  'SPLH': 'Aeródromo Las Dunas — Ica',
+  'SPLA': 'Aeropuerto Las Américas — Las Américas',
+  'SPIN': 'Aeropuerto de Iñapari — Iñapari',
+  'SPDT': 'Helipuerto Privado Trompeteros',
+  'SPLB': 'Las Bambas'
+};
+
+/* Dado un código ICAO, retorna "SPXX — Nombre" o solo "SPXX" */
+function nombreAero(cod){
+  var nom = FIR_SPIM[cod];
+  return nom ? cod+' — '+nom : cod;
+}
+
+/* Dado el campo A) (puede ser varios codigos), retorna HTML con nombres */
+function aeroDisplayHtml(afStr, aeroObj){
+  var results = [];
+  // Primero: objeto parseado del texto (SPXX - Nombre)
+  if(aeroObj){
+    var nombre = FIR_SPIM[aeroObj.cod] || aeroObj.nom;
+    results.push('<span class="aero-cod">'+esc(aeroObj.cod)+'</span>'
+               + '<span class="aero-nom">'+esc(nombre)+'</span>');
   }
-  var tipoBadge='';
-  if(n.tipo){
-    var tCls=n.tipo.tipo==='NOTAMC'?'bdg-tipo-c':n.tipo.tipo==='NOTAMR'?'bdg-tipo-r':'bdg-tipo-n';
-    tipoBadge='<span class="bdg-tipo '+tCls+'">'+n.tipo.tipo+'</span>';
-    if(n.tipo.ref)tipoBadge+=' <span class="tipo-ref">ref: '+esc(n.tipo.ref)+'</span>';
+  // Luego: códigos del campo A) que no sean el mismo que aeroObj
+  if(afStr){
+    var codes = afStr.split(/\s+/).filter(function(c){ return /^[A-Z]{4}$/.test(c); });
+    codes.forEach(function(c){
+      if(aeroObj && c===aeroObj.cod) return; // ya incluido
+      var nom = FIR_SPIM[c];
+      results.push(nom
+        ? '<span class="aero-cod">'+esc(c)+'</span><span class="aero-nom">'+esc(nom)+'</span>'
+        : '<span class="aero-cod">'+esc(c)+'</span>');
+    });
   }
-  var estBadge='';
-  if(n.estLabel==='CON EST')estBadge='<span class="bdg b-est">CON EST</span>';
-  else if(n.estLabel==='SIN EST')estBadge='<span class="bdg b-sino">SIN EST</span>';
-  else if(n.estLabel==='PERM')estBadge='<span class="bdg b-perm">PERM</span>';
-  var serieBadge=n.serie==='A'?'<span class="bdg b-int">INT</span>':'<span class="bdg b-nac">NAC</span>';
-  var aeroHtml='';
-  if(n.aero){var codes=n.aero.split(' ');aeroHtml='<div class="aero-strip"><div class="aero-left">'+codes.map(function(c){return'<span class="aero-cod">'+esc(c)+'</span>'}).join('<span class="aero-sep">·</span>')+'</div>'+(n.q.fir?'<span class="fir-tag">FIR '+esc(n.q.fir)+'</span>':'')+'</div>'}
-  var tipoStrip='';
-  if(n.q.q)tipoStrip='<div class="tipo-strip"><span class="q-tag">Q) '+esc(n.q.fir)+'/'+esc(n.q.q)+'</span></div>';
-  var isRinging=alarmaON[n.idx]&&n.status==='urgent';
-  if(isRinging)n.cls+=' ringing';
-  var ringBtn='<button class="btn btn-sil-act" id="ringBtn-'+n.idx+'" onclick="silenciarAlarma('+n.idx+')" style="display:'+(isRinging?'inline-block':'none')+'">🔕 Silenciar</button>';
-  return'<div class="'+n.cls+'" id="card-'+n.idx+'">'+
-
-    '<div class="c-head"><span class="c-id">'+esc(n.disp)+'</span><div class="c-badges">'+tipoBadge+serieBadge+estBadge+'<span class="bdg '+n.statusCls+'">'+n.statusLabel+'</span></div></div>'+
-    aeroHtml+tipoStrip+
-    '<div class="c-sep"></div>'+
-    '<div class="raw-notam-box">'+esc(n.raw)+'</div>'+
-    '<div class="c-bottom">'+clockHtml+venceHtml+'</div>'+
-    '<div class="c-btns">'+ringBtn+'<button class="btn btn-del" onclick="eliminarNotam(\''+esc(n.id)+'\')">✕ Eliminar</button></div>'+
-    '</div>';
+  if(!results.length) return '';
+  return results.join('<span class="aero-sep">·</span>');
 }
 
-function render(){
-  var board=document.getElementById('board');
-  var filtered=notams.filter(function(n){
-    if(!n)return false;
-    if(filtroActual==='est'&&n.estLabel!=='CON EST')return false;
-    if(filtroActual==='sino'&&n.estLabel!=='SIN EST')return false;
-    if(filtroActual==='perm'&&n.status!=='perm')return false;
-    var fa=document.getElementById('filtroAero').value.toUpperCase();
-    var fq=document.getElementById('filtroQ').value.toUpperCase();
-    var ft=document.getElementById('filtroTexto').value.toUpperCase();
-    var fn=document.getElementById('filtroNumero').value.toUpperCase();
-    if(fa&&n.aero.indexOf(fa)===-1&&n.id.indexOf(fa)===-1)return false;
-    if(fq&&(!n.q.q||n.q.q.toUpperCase().indexOf(fq)===-1))return false;
-    if(ft&&n.raw.toUpperCase().indexOf(ft)===-1&&n.e.toUpperCase().indexOf(ft)===-1)return false;
-    if(fn&&n.id.toUpperCase().indexOf(fn)===-1)return false;
-    return true;
+function pA(txt){
+  // Match A) on its line; stop at newline, extract only 4-letter ICAO codes
+  var m=txt.match(/\bA\)\s*([^\r\n]+)/i);
+  if(!m) return null;
+  // Only exact 4 uppercase letters — excludes single letters like B, C, D
+  var tokens = m[1].match(/\b([A-Z]{4})\b/g);
+  if(!tokens) return null;
+  // Final safety: keep only tokens that are ALL uppercase letters (no digits)
+  tokens = tokens.filter(function(t){ return /^[A-Z]{4}$/.test(t); });
+  return tokens.length ? tokens.join(' ') : null;
+}
+function pQ(txt){ var m=txt.match(/\bQ\)\s*([A-Z]{4})\/([A-Z0-9]+)\//i); return m?{fir:m[1],q:m[2]}:null; }
+
+function pE(txt){
+  var m=txt.match(/\bE\)\s*([\s\S]+?)(?=\r?\n[A-GN]\)|\r?\nNOTAMR|\r?\nNOTAMC|$)/i);
+  return m?m[1].replace(/\s+$/,''):null;
+}
+
+function pAero(txt){ var m=txt.match(/^([A-Z]{4})\s*[-\u2013]\s*(.+)/m); return m?{cod:m[1],nom:m[2].trim()}:null; }
+
+function pFecha(txt){
+  // Busca DD/MM/YYYY HH:MM[:SS]
+  // Preferencia: fecha que aparece ANTES de la primera linea con ID del NOTAM
+  // (es la fecha de publicacion encabezado). Si no hay, usa cualquier fecha del texto.
+  var lineas = txt.split(/\r?\n/);
+  var RE_F = /(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/;
+
+  // Primero buscar antes del ID
+  for(var i=0;i<lineas.length;i++){
+    if(RE_ID.test(lineas[i])) break;
+    var m=lineas[i].match(RE_F);
+    if(m) return m[1]+'/'+m[2]+'/'+m[3]+'  '+m[4]+':'+m[5]+(m[6]?':'+m[6]:'')+' UTC';
+  }
+  // Si no encontro antes del ID, buscar en todo el texto (puede estar al final)
+  var m2=txt.match(RE_F);
+  if(!m2) return null;
+  return m2[1]+'/'+m2[2]+'/'+m2[3]+'  '+m2[4]+':'+m2[5]+(m2[6]?':'+m2[6]:'')+' UTC';
+}
+
+// Convertir string fecha a timestamp
+function fechaToTs(fechaStr){
+  if(!fechaStr) return null;
+  var m = fechaStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(!m) return null;
+  var d = new Date(Date.UTC(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])||0));
+  return isNaN(d) ? null : d.getTime();
+}
+
+// Ordenar notams según el modo actual
+function sortNotams(){
+  notams.sort(function(a,b){
+    if(sortMode === 'publication'){
+      // Último publicado primero (más reciente primero)
+      // Usar publishedAt si está disponible, sino usar fechaTs
+      var ta = a.publishedAt ? new Date(a.publishedAt).getTime() : (a.fechaTs || 0);
+      var tb = b.publishedAt ? new Date(b.publishedAt).getTime() : (b.fechaTs || 0);
+      return tb - ta; // descendente: más reciente primero
+    } else {
+      // Por vencimiento (por defecto)
+      var ta = a.perm ? Infinity : (a.expTs || 9e13);
+      var tb = b.perm ? Infinity : (b.expTs || 9e13);
+      return ta - tb;
+    }
   });
-  filtered.sort(function(a,b){
-    if(a.status==='expired'&&b.status!=='expired')return 1;
-    if(b.status==='expired'&&a.status!=='expired')return-1;
-    if(a.c&&a.c.ts&&b.c&&b.c.ts)return a.c.ts-b.c.ts;
-    if(a.c&&a.c.ts)return-1;
-    if(b.c&&b.c.ts)return 1;
-    return 0;
-  });
-  document.getElementById('boardCount').textContent=filtered.length+' NOTAM'+(filtered.length!==1?'s':'');
-  var fc=document.getElementById('filtroCount');
-  var totalF=notams.length;
-  fc.textContent=filtered.length===totalF?'':filtered.length+'/'+totalF;
-  if(!filtered.length){board.innerHTML='<div class="empty-s"><div class="ei">📡</div><p>Sin NOTAMs que mostrar</p></div>';return}
-  board.innerHTML=filtered.map(renderCard).join('');
-  // Update countdowns
-  filtered.forEach(function(n){
-    if(n.c&&n.c.ts&&!n.c.perm){
-      var rest=n.c.ts-Date.now();
-      if(rest>0){
-        var hh=Math.floor(rest/3600000),mm=Math.floor((rest%3600000)/60000),ss=Math.floor((rest%60000)/1000);
-        var el=document.querySelector('#card-'+n.idx+' .ck-display');
-        if(el){var ckCls=rest<3600000?'ck-red':'ck-blue';el.className='ck-display '+ckCls;el.textContent=('0'+hh).slice(-2)+':'+('0'+mm).slice(-2)+':'+('0'+ss).slice(-2)}
+}
+
+// Toggle modo de ordenación
+function toggleSort(){
+  sortMode = sortMode === 'expiration' ? 'publication' : 'expiration';
+  sortNotams();
+  guardar();
+  renderizar();
+  updateSortBadge();
+}
+
+function updateSortBadge(){
+  var badge = document.getElementById('sortBadge');
+  if(badge){
+    if(sortMode === 'publication'){
+      badge.textContent = 'Ordenado por Publicación';
+      badge.style.background = '#2563eb';
+    } else {
+      badge.textContent = 'Ordenado por Vencimiento';
+      badge.style.background = '#e03050';
+    }
+  }
+}
+
+// Tipo de NOTAM: NOTAMN / NOTAMR ref / NOTAMC
+function pTipo(txt){
+  var m=txt.match(/\b(NOTAMR|NOTAMN|NOTAMC)\s*([AC]\d{4}\/\d{2,4})?/i);
+  if(!m) return null;
+  return { tipo:m[1].toUpperCase(), ref:m[2]||null };
+}
+
+/* ======================================================
+   SEPARAR POR ID
+   El separador es unicamente el identificador del NOTAM.
+   Se incluyen las lineas de cabecera (fecha de publicacion,
+   nombre de aeródromo) que estén JUSTO antes del ID.
+====================================================== */
+var RE_DATE_HDR = /^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/;
+var RE_AERO_HDR = /^[A-Z]{4}\s*[-\u2013]\s*\S/;
+
+/* ════════════════════════════════════════════════════════════
+   PARSER CORPAC — Formato exclusivo de extranet.corpac.gob.pe
+   
+   Estructura del PIB de CORPAC:
+   - Cabecera global del boletín
+   - Grupos por aeródromo:
+       PERU - SPXX - NOMBRE CIUDAD
+         NOTAM_ID |        B) YYMMDDHHMM C) YYMMDDHHMM [EST] [D) ...]
+         DESCRIPCION DEL NOTAM (puede ser varias líneas)
+         NOTAM_ID |        B) ...
+         ...
+   
+   Diferencia clave vs formato estándar:
+   - ID y campos B)/C)/D) están en la MISMA línea separados por "|"
+   - La descripción E) va en la línea(s) siguiente al ID
+   - El aeródromo viene de la línea "PERU - SPXX - ..."
+   - No hay campo Q) explícito
+════════════════════════════════════════════════════════════ */
+
+/* Detectar si el texto pegado es formato CORPAC */
+function esCORPAC(txt){
+  return /BOLET[IÍ]N DE INFORMACI[OÓ]N|SISTEMA DE RESPALDO NOTAM|PERU\s+-\s+SP[A-Z]{2}\s+-/i.test(txt)
+      || /^\s*[AC]\d{4}\/\d{2,4}\s*\|\s+B\)\s*\d{10}/m.test(txt);
+}
+
+/* Parsear el boletín CORPAC completo y devolver array de objetos NOTAM */
+function parsearCORPAC(txt){
+  var lineas = txt.split(/\r?\n/);
+  var resultados = [];
+  var aeroActual = { icao:'', nombre:'' };
+
+  /* RE para línea de grupo aeródromo: PERU - SPXX - NOMBRE */
+  var RE_AERO_CORPAC = /^PERU\s*-\s*([A-Z]{4})\s*-\s*(.+)/i;
+  /* RE para línea de NOTAM: A####/## |  B) ... */
+  var RE_NOTAM_CORPAC = /^([AC]\d{4}\/\d{2,4})\s*\|\s+(.*)/;
+
+  var i = 0;
+  while(i < lineas.length){
+    var ln = lineas[i].trim();
+
+    /* Detectar cabecera de aeródromo */
+    var mAero = ln.match(RE_AERO_CORPAC);
+    if(mAero){
+      aeroActual = { icao: mAero[1].toUpperCase(), nombre: mAero[2].trim() };
+      i++; continue;
+    }
+
+    /* Detectar línea de NOTAM */
+    var mNot = ln.match(RE_NOTAM_CORPAC);
+    if(mNot){
+      var idStr   = mNot[1];   /* e.g. C4854/25 */
+      var camposBCDE = mNot[2]; /* B) 2512301520 C) 2603301800 EST D) ... */
+
+      /* Leer líneas de descripción hasta el siguiente NOTAM o aeródromo */
+      var descLineas = [];
+      var j = i+1;
+      while(j < lineas.length){
+        var ln2 = lineas[j].trim();
+        if(!ln2){ j++; continue; }                      /* línea vacía: saltar */
+        if(RE_NOTAM_CORPAC.test(ln2)) break;             /* siguiente NOTAM */
+        if(RE_AERO_CORPAC.test(ln2)) break;              /* siguiente aeródromo */
+        if(/^\*\*\*FIN/.test(ln2)) break;                /* fin de reporte */
+        descLineas.push(ln2);
+        j++;
       }
+      i = j; /* avanzar al siguiente bloque */
+
+      /* Normalizar ID: 2 dígitos de año → 4 */
+      var mId = idStr.match(/^([AC])(\d{4})\/(\d{2,4})$/);
+      if(!mId) continue;
+      var yr2 = mId[3].length===2 ? '20'+mId[3] : mId[3];
+      var idFull    = mId[1]+mId[2]+'/'+mId[3];
+      var idDisplay = mId[1]+mId[2]+'/'+yr2;
+
+      /* Parsear B) C) D) de la misma línea */
+      var bMatch  = camposBCDE.match(/B\)\s*(\d{10})/i);
+      var cMatch  = camposBCDE.match(/C\)\s*(\d{10})\s*(EST)?/i);
+      var cPerm   = /C\)\s*PERM\b/i.test(camposBCDE);
+      var dMatch  = camposBCDE.match(/D\)\s*(.+)/i);
+
+      var bTs  = bMatch  ? s10(bMatch[1]) : null;
+      var cTs  = cMatch  ? s10(cMatch[1]) : null;
+      var cEst = cMatch  ? !!cMatch[2]    : false;
+
+      var cf = cPerm
+        ? { perm:true,  ts:null, est:false, raw:'PERM' }
+        : (cTs ? { perm:false, ts:cTs, est:cEst, raw:(cMatch?cMatch[1]:'') } : null);
+
+      var expTs = (cf && !cf.perm && cf.ts) ? cf.ts : null;
+      var desc  = descLineas.join(' ').trim();
+
+      /* Reconstruir texto legible (similar al formato estándar para el display) */
+      var rawVis = idDisplay+' NOTAMN\n'
+        + (aeroActual.icao ? 'A) '+aeroActual.icao+'\n' : '')
+        + 'B) '+(bMatch?bMatch[1]:'DESCONOCIDO')+'\n'
+        + 'C) '+(cPerm?'PERM':(cMatch?cMatch[1]+(cEst?' EST':''):'DESCONOCIDO'))+'\n'
+        + (dMatch ? 'D) '+dMatch[1]+'\n' : '')
+        + 'E) '+desc;
+
+      resultados.push({
+        id: {
+          raw:    idFull,
+          disp:   idDisplay,
+          serie:  mId[1],
+          num:    mId[2],
+          year:   yr2,
+          key:    'n_'+idFull.replace(/\//g,'_')
+        },
+        raw:    rawVis,
+        rawVis: rawVis,
+        c:      cf,
+        b:      bTs ? { ts:bTs, raw:(bMatch?bMatch[1]:'') } : null,
+        a:      aeroActual.icao,
+        q:      null,
+        e:      desc,
+        aero:   { cod: aeroActual.icao, nom: FIR_SPIM[aeroActual.icao]||aeroActual.nombre },
+        fecha:  bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null,
+        fechaTs: bTs,
+        publishedAt: bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null,
+        tipo:   null,
+        expTs:  expTs,
+        perm:   cf ? cf.perm : false,
+        alarma: cf ? (!cf.perm && cf.est) : false,
+        silenciado: false,
+        fuenteCORPAC: true
+      });
+      continue;
     }
-  });
-  checkAlarms(filtered);
+
+    i++;
+  }
+  return resultados;
 }
 
-function checkAlarms(list){
-  var now=Date.now();
-  list.forEach(function(n){
-    if(!n.c||n.c.perm||!n.c.ts||alarmas[n.idx])return;
-    var rest=n.c.ts-now;
-    if(rest>0&&rest<=600000){
-      alarmas[n.idx]=setInterval(function(){
-        if(!alarmaON[n.idx]){alarmaON[n.idx]=true;playBeep();render()}
-      },2000);
+function separar(txt){
+  var lineas = txt.split(/\r?\n/);
+  var idIdx  = [];
+  for(var i=0;i<lineas.length;i++){
+    if(RE_ID.test(lineas[i])) idIdx.push(i);
+  }
+  if(!idIdx.length) return [];
+
+  // PASO 1: para cada línea con ID, calcular su "inicio real"
+  // (incluyendo líneas de cabecera que la preceden: fecha DD/MM/YYYY y nombre XXXX - nombre)
+  var starts = [];
+  for(var k=0;k<idIdx.length;k++){
+    var idLine    = idIdx[k];
+    // limite: no podemos ir más allá del inicio del bloque anterior
+    var prevBound = k>0 ? starts[k-1]+1 : 0;
+    var start     = idLine;
+    for(var back=idLine-1; back>=prevBound; back--){
+      var ln=lineas[back].trim();
+      if(ln==='') break;
+      if(RE_DATE_HDR.test(ln)||RE_AERO_HDR.test(ln)){ start=back; }
+      else break;
     }
-  });
+    starts.push(start);
+  }
+
+  // PASO 2: cada bloque va desde starts[k] hasta starts[k+1]
+  // (NO hasta idIdx[k+1], porque las cabeceras del siguiente
+  //  bloque pertenecen al siguiente, no al anterior)
+  var bloques=[];
+  for(var k=0;k<starts.length;k++){
+    var desde = starts[k];
+    var hasta = k+1<starts.length ? starts[k+1] : lineas.length;
+    var b=lineas.slice(desde,hasta).join('\n').trim();
+    if(b) bloques.push(b);
+  }
+  return bloques;
 }
 
-function playBeep(){
+/* Construye el texto de visualizacion:
+   - Incluye la fecha de publicacion (DD/MM/YYYY) que aparece ANTES del ID
+   - Comienza en la linea del ID del NOTAM
+   - Elimina lineas de fecha/aeródromo al FINAL del bloque
+     (son cabeceras del siguiente NOTAM que quedaron pegadas)
+   - Elimina lineas en blanco al final */
+function rawParaMostrar(txt){
+  var lineas = txt.split(/\r?\n/);
+
+  // Encontrar la linea donde esta el ID
+  var idLine = 0;
+  for(var i=0;i<lineas.length;i++){
+    if(RE_ID.test(lineas[i])){ idLine=i; break; }
+  }
+
+  // Recoger lineas ANTES del ID que sean fecha o nombre de aeródromo
+  // (pertenecen a ESTE bloque como cabecera)
+  var headerLineas = [];
+  for(var h=idLine-1; h>=0; h--){
+    var lh = lineas[h].trim();
+    if(lh==='' || RE_DATE_HDR.test(lh) || RE_AERO_HDR.test(lh)){
+      if(lh) headerLineas.unshift(lh);
+    } else {
+      break;
+    }
+  }
+
+  // Recortar lineas finales que sean: fecha, nombre-aero o vacias
+  var hasta = lineas.length - 1;
+  while(hasta > idLine){
+    var ln = lineas[hasta].trim();
+    if(ln==='' || RE_DATE_HDR.test(ln) || RE_AERO_HDR.test(ln)){
+      hasta--;
+    } else {
+      break;
+    }
+  }
+
+  var cuerpo = lineas.slice(idLine, hasta+1).join('\n');
+  return headerLineas.length
+    ? headerLineas.join('\n') + '\n' + cuerpo
+    : cuerpo;
+}
+
+function construir(txt){
+  var id=pId(txt); if(!id) return null;
+  var cf=pC(txt), bf=pB(txt), af=pA(txt), qf=pQ(txt), ef=pE(txt);
+  var aero=pAero(txt), fecha=pFecha(txt), tipo=pTipo(txt);
+  var expTs=(cf&&!cf.perm&&cf.ts)?cf.ts:null;
+  var fechaTs=fechaToTs(fecha);
+  var rawVis = rawParaMostrar(txt);   // texto limpio para mostrar en tarjeta
+  return {
+    id:id, raw:txt, rawVis:rawVis, c:cf, b:bf, a:af, q:qf, e:ef,
+    aero:aero, fecha:fecha, fechaTs:fechaTs, publishedAt:fecha, tipo:tipo, expTs:expTs,
+    perm:cf?cf.perm:false,
+    alarma:cf?(!cf.perm&&cf.est):false,
+    silenciado:false
+  };
+}
+
+/* ══════════════════════════════════════════════
+   PROCESAR — botón principal
+══════════════════════════════════════════════ */
+function procesar(){
+  var txt=document.getElementById('txtInput').value.trim();
+  if(!txt){ toast('Ingrese el texto del NOTAM.','err'); return; }
+
+  var objetos = [];
+
+  if(esCORPAC(txt)){
+    /* ── Formato CORPAC (PIB de extranet.corpac.gob.pe) ── */
+    objetos = parsearCORPAC(txt);
+    if(!objetos.length){
+      toast('No se encontraron NOTAMs en el boletín CORPAC.','err');
+      return;
+    }
+  } else {
+    /* ── Formato estándar OACI ── */
+    var bloques = separar(txt);
+    if(!bloques.length){
+      toast('No se encontró ningún ID válido (ej: C4129/24, A3199/2025).','err');
+      return;
+    }
+    for(var k=0; k<bloques.length; k++){
+      var o=construir(bloques[k]);
+      if(o) objetos.push(o);
+    }
+  }
+
+  var added=0, dupes=0, ids=[];
+  for(var i=0;i<objetos.length;i++){
+    var obj=objetos[i];
+    var dup=false;
+    for(var j=0;j<notams.length;j++){
+      if(notams[j].id.raw===obj.id.raw){dup=true;break;}
+    }
+    if(dup){dupes++;continue;}
+    notams.push(obj); added++; ids.push(obj.id.disp);
+  }
+
+  if(added>0){
+    sortNotams();
+    guardar(); renderizar();
+    document.getElementById('txtInput').value='';
+    var src = esCORPAC(txt) ? ' [CORPAC]' : '';
+    var msg = added===1
+      ? '✔ '+ids[0]+src+' añadido.'
+      : '✔ '+added+' NOTAMs'+src+': '+ids.slice(0,5).join(', ')+(ids.length>5?' +'+(ids.length-5)+'...':'');
+    if(dupes>0) msg+=' ('+dupes+' duplicado'+(dupes>1?'s':'')+' omitido'+(dupes>1?'s':'')+')';
+    toast(msg,'ok');
+  } else if(dupes>0){
+    toast('Todos los NOTAMs ya existen en la pizarra.','err');
+  } else {
+    toast('No se pudo procesar ningún bloque.','err');
+  }
+}
+
+function limpiar(){
+  if(!notams.length) return;
+  if(!confirm('¿Eliminar todos los NOTAMs?')) return;
+  notams=[];
+  for(var k in alarmas) clearInterval(alarmas[k]);
+  alarmas={}; alarmaON={};
+  guardar(); renderizar();
+}
+
+function eliminar(idx){
+  var n = notams[idx];
+  var id = n ? n.id.disp : 'este NOTAM';
+  if(!confirm('¿Eliminar ' + id + ' de la pizarra?')) return;
+  pararAlarma(idx);
+  notams.splice(idx,1);
+  guardar(); renderizar();
+}
+
+function silenciar(idx){
+  pararAlarma(idx);
+  if(notams[idx]) notams[idx].silenciado=true;
+  guardar();
+  var s=document.getElementById('sil-'+idx);
+  if(s) s.style.display='none';
+  var c=document.getElementById('card-'+idx);
+  if(c) c.classList.remove('ringing');
+}
+
+function toggleRaw(idx){
+  var el=document.getElementById('raw-'+idx);
+  var lnk=document.getElementById('rlnk-'+idx);
+  if(!el) return;
+  var v=el.style.display==='block';
+  el.style.display=v?'none':'block';
+  lnk.textContent=v?'▶ Ver texto completo':'▼ Ocultar texto';
+}
+
+/* ══════════════════════════════════════════════
+   AUDIO
+══════════════════════════════════════════════ */
+function getCtx(){ if(!actx) actx=new(window.AudioContext||window.webkitAudioContext)(); return actx; }
+function beep(f,d,v){
+  v=v||0.44;
   try{
-    if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
-    var o=actx.createOscillator(),g=actx.createGain();
-    o.connect(g);g.connect(actx.destination);
-    o.frequency.value=880;o.type='square';g.gain.value=0.3;
-    o.start();o.stop(actx.currentTime+0.15);
-    setTimeout(function(){var o2=actx.createOscillator(),g2=actx.createGain();o2.connect(g2);g2.connect(actx.destination);o2.frequency.value=1100;o2.type='square';g2.gain.value=0.3;o2.start();o2.stop(actx.currentTime+0.15)},200);
+    var c=getCtx(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=f;o.type='sine';
+    g.gain.setValueAtTime(v,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+    o.start();o.stop(c.currentTime+d);
   }catch(e){}
 }
+function seq(){ beep(880,.13);setTimeout(function(){beep(1100,.13);},160);setTimeout(function(){beep(880,.13);},320);setTimeout(function(){beep(1320,.18);},480); }
 
-function silenciarAlarma(idx){alarmaON[idx]=false;clearInterval(alarmas[idx]);delete alarmas[idx];var b=document.getElementById('ringBtn-'+idx);if(b)b.style.display='none';toast('Alarma silenciada','ok')}
-function eliminarNotam(id){notams=notams.filter(function(n){return n.id!==id});guardar();render();toast('NOTAM eliminado','ok')}
-function navNotam(dir){var cards=document.querySelectorAll('.ncard');if(!cards.length)return;cards[navIdx]&&cards[navIdx].classList.remove('nav-focus');navIdx=Math.max(0,Math.min(navIdx+dir,cards.length-1));cards[navIdx].classList.add('nav-focus');cards[navIdx].scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('navPos').textContent=(navIdx+1)+'/'+cards.length}
-function setFiltro(f){filtroActual=f;document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});document.getElementById('fb'+f.charAt(0).toUpperCase()+f.slice(1)).classList.add('active');render()}
-function aplicarBusqueda(){render()}
-function limpiarFiltro(id){document.getElementById(id).value='';render()}
-function toast(msg,cls){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(cls||'');setTimeout(function(){t.className='toast'},2500)}
-
-function procesar(){
-  var txt=document.getElementById('txtInput').value.trim();if(!txt){toast('Ingrese NOTAMs','err');return}
-  var parts=txt.split(/(?=[AC]\d{4}\/\d{2,4})/);
-  var added=0;
-  parts.forEach(function(p){p=p.trim();if(!p)return;var n=parseFullNotam(p,notams.length+added);if(n){notams.push(n);added++}});
-  if(added){guardar();render();toast(added+' NOTAM(s) procesado(s)','ok');document.getElementById('txtInput').value=''}
-  else{toast('No se detectaron NOTAMs válidos','err')}
+function iniciarAlarma(idx){
+  if(alarmaON[idx]) return;
+  alarmaON[idx]=true; seq();
+  alarmas[idx]=setInterval(seq,4000);
+  var sil=document.getElementById('sil-'+idx);
+  if(sil) sil.style.display='block';
+  var c=document.getElementById('card-'+idx);
+  if(c) c.classList.add('ringing');
+  var dot=document.getElementById('dot-'+idx);
+  if(dot) dot.className='st-dot ring';
+  var lbl=document.getElementById('stlbl-'+idx);
+  if(lbl) lbl.textContent='⚠ ALARMA SONANDO';
 }
-function limpiar(){notams=[];alarmas={};alarmaON={};guardar();render();toast('Todo limpiado','ok')}
 
-function toggleFetchPanel(){var b=document.getElementById('fetchBody'),a=document.getElementById('fetchArrow');b.classList.toggle('open');a.classList.toggle('open')}
+function pararAlarma(idx){
+  if(alarmas[idx]){clearInterval(alarmas[idx]);delete alarmas[idx];}
+  alarmaON[idx]=false;
+  var sil=document.getElementById('sil-'+idx);
+  if(sil) sil.style.display='none';
+  var c=document.getElementById('card-'+idx);
+  if(c) c.classList.remove('ringing');
+  var dot=document.getElementById('dot-'+idx);
+  if(dot) dot.className='st-dot';
+  var lbl=document.getElementById('stlbl-'+idx);
+  var n=notams[idx];
+  if(lbl) lbl.textContent=(n&&n.alarma)?'Con alarma EST':'Sin EST - Sin Alarma';
+}
 
-// ═══ CORPAC API FETCH ═══
-async function fetchFIR(){
-  var st=document.getElementById('fetchStatus');
-  st.innerHTML='<span class="spin">⏳</span> Consultando CORPAC API...';
-  try{
-    var resp=await fetch(API_BASE+'/notams');
-    if(!resp.ok)throw new Error('API returned '+resp.status);
-    var data=await resp.json();
-    if(!data.notams||!data.notams.length){st.innerHTML='<span class="fetch-err">⚠ No se encontraron NOTAMs</span>';return}
-    var added=0;
-    data.notams.forEach(function(n){
-      var raw=n.raw_text||'';
-      if(!raw){raw=n.id+' '+(n.type||'NOTAMN')+'\nQ)'+(n.q_line||'')+'\nA) '+(n.location||'')+'\nB) '+(n.effective_from||'')+'\nC) '+(n.effective_until||'')+'\nE) '+(n.description||'')}
-      var parsed=parseFullNotam(raw,notams.length+added);
-      if(parsed){
-        var exists=notams.some(function(ex){return ex.id===parsed.id});
-        if(!exists){notams.push(parsed);added++}
-        else{
-          var idx=notams.findIndex(function(ex){return ex.id===parsed.id});
-          if(idx>=0)notams[idx]=parsed;
-        }
+/* ══════════════════════════════════════════════
+   FORMATO
+══════════════════════════════════════════════ */
+function fmt(ts){
+  if(!ts) return 'N/D';
+  var d=new Date(ts),p=function(n){return('0'+n).slice(-2);};
+  var M=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  return p(d.getUTCDate())+'/'+M[d.getUTCMonth()]+'/'+d.getUTCFullYear()+' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes())+' UTC';
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══════════════════════════════════════════════
+   HTML DE TARJETA  (idx = índice numérico)
+══════════════════════════════════════════════ */
+function card(n, idx, terminos){
+  /* clase de borde lateral */
+  var serieClass = n.id.serie==='A' ? '' : ' serie-C';
+
+  /* badge serie (texto coloreado, sin fondo) */
+  var sBdg = n.id.serie==='A'
+    ? '<span class="bdg b-int">INTERNACIONAL</span>'
+    : '<span class="bdg b-nac">NACIONAL</span>';
+
+  /* badge alarma */
+  var aBdg = n.perm
+    ? '<span class="bdg b-perm">PERM</span>'
+    : (n.alarma
+        ? '<span class="bdg b-est">AUTO EST</span>'
+        : '<span class="bdg b-sino">SIN EST</span>');
+
+  /* badge estado (ACTIVO/URGENTE por defecto) */
+  var stBdg = '<span class="bdg b-act" id="stbdg-'+idx+'">ACTIVO</span>';
+
+  /* badge fecha de publicación */
+  var pubBdg = n.publishedAt
+    ? '<span class="bdg-pub">📅 '+esc(n.publishedAt.trim())+'</span>'
+    : (n.fecha ? '<span class="bdg-pub">📅 '+esc(n.fecha.trim())+'</span>' : '');
+
+  /* tipo NOTAM (pequeño, arriba del raw) */
+  var tipoHtml='';
+  if(n.tipo){
+    var tCls=n.tipo.tipo==='NOTAMR'?'bdg-tipo-r':(n.tipo.tipo==='NOTAMC'?'bdg-tipo-c':'bdg-tipo-n');
+    tipoHtml='<span class="bdg-tipo '+tCls+'">'+n.tipo.tipo+'</span>';
+    if(n.tipo.ref) tipoHtml+=' <span class="tipo-ref">↩ '+esc(n.tipo.ref)+'</span>';
+    tipoHtml='<div style="padding:4px 13px 0;font-size:.72rem;">'+tipoHtml+'</div>';
+  }
+
+  /* sección reloj o PERM */
+  var clockHtml='';
+  if(n.perm){
+    clockHtml='<div class="perm-wrap">'
+      +'<span class="perm-ico">♾</span>'
+      +'<div><div class="perm-txt">PERMANENTE</div>'
+      +'<div class="perm-sub">Sin vencimiento — sin alarma</div></div>'
+      +'</div>';
+  } else {
+    var expStr=n.expTs?fmt(n.expTs):'N/D';
+    var stlbl = n.alarma ? 'Con alarma EST' : 'Sin EST - Sin Alarma';
+    clockHtml=
+      '<div class="ck-row">'
+      +'<div class="ck-left">'
+      +'  <div class="ck-display ck-blue" id="ck-'+idx+'">--:--</div>'
+      +'  <div class="ck-vence" id="ck-vence-'+idx+'">Vence: '+esc(expStr)+'</div>'
+      +'  <div class="ck-rest"  id="ck-rest-'+idx+'">Calculando...</div>'
+      +'</div>'
+      +'<div class="ck-right">'
+      +'  <span class="st-dot" id="dot-'+idx+'"></span>'
+      +'  <span id="stlbl-'+idx+'">'+stlbl+'</span>'
+      +'</div>'
+      +'</div>';
+  }
+
+  /* botones */
+  var btnsHtml='<div class="c-btns">';
+  if(n.alarma){
+    btnsHtml+='<button class="btn btn-sil-act" id="sil-'+idx+'" onclick="silenciar('+idx+')">🔕 Silenciar Alarma</button>';
+  } else {
+    btnsHtml+='<button class="btn btn-no-alm">Sin Alarma</button>';
+  }
+  btnsHtml+='<button class="btn btn-del" onclick="eliminar('+idx+')">Eliminar</button>';
+  btnsHtml+='</div>';
+
+  /* pie emisión */
+  var emitHtml=n.fecha
+    ? '<div class="emit-foot">📅 Publicado: <b>'+esc(n.fecha.trim())+'</b></div>'
+    : '';
+
+  /* si hay published_at del API, mostrarlo también */
+  if(n.publishedAt && n.fecha && n.publishedAt !== n.fecha){
+    emitHtml='<div class="emit-foot">📅 Publicado: <b>'+esc(n.publishedAt.trim())+'</b></div>';
+  }
+
+  /* ── aeródromo HTML con nombre completo ── */
+  var aeroHtml = aeroDisplayHtml(n.a, n.aero);
+  var qHtml = n.q
+    ? '<span class="fir-tag">FIR '+esc(n.q.fir)+'</span>'
+    + '<span class="q-tag">'+esc(n.q.q)+'</span>'
+    : '';
+
+  return '<div class="ncard'+serieClass+'" id="card-'+idx+'">'
+    /* ── cabecera: ID + badges ── */
+    +'<div class="c-head">'
+    +  '<span class="c-id">'+esc(n.id.disp)+'</span>'
+    +  '<div class="c-badges">'+stBdg+' '+sBdg+' '+aBdg+' '+pubBdg+'</div>'
+    +'</div>'
+    /* ── aeródromo + tipo + FIR/Q ── */
+    +'<div class="aero-strip">'
+    +  '<div class="aero-left">'+aeroHtml+'</div>'
+    +  '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">'
+    +    (n.tipo?('<span class="bdg-tipo '+(n.tipo.tipo==='NOTAMR'?'bdg-tipo-r':n.tipo.tipo==='NOTAMC'?'bdg-tipo-c':'bdg-tipo-n')+'">'+n.tipo.tipo+'</span>'+(n.tipo.ref?' <span class="tipo-ref">↩ '+esc(n.tipo.ref)+'</span>':'')):'')
+    +    qHtml
+    +  '</div>'
+    +'</div>'
+    /* ── texto raw siempre visible ── */
+    +'<div class="raw-notam-box">'+(terminos&&terminos.length?resaltarTexto(n.rawVis||n.raw,terminos):esc(n.rawVis||n.raw))+'</div>'
+    /* ── zona inferior ── */
+    +'<div class="c-bottom">'+clockHtml+'</div>'
+    /* ── botones ── */
+    + btnsHtml
+    /* ── pie ── */
+    + emitHtml
+    +'</div>';
+}
+
+
+/* ══════════════════════════════════════════════
+   FILTRO
+══════════════════════════════════════════════ */
+function setFiltro(tipo){
+  filtroActual = tipo;
+  ['fbTodos','fbEst','fbSino','fbPerm'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm'};
+  var el = document.getElementById(map[tipo]);
+  if(el) el.classList.add('active');
+  renderizar();
+}
+
+function aplicarBusqueda(){
+  var aEl = document.getElementById('filtroAero');
+  var qEl = document.getElementById('filtroQ');
+  var tEl = document.getElementById('filtroTexto');
+  filtroAero  = aEl ? aEl.value.trim().toUpperCase() : '';
+  filtroQ     = qEl ? qEl.value.trim().toUpperCase() : '';
+  filtroTexto = tEl ? tEl.value.trim().toUpperCase() : '';
+  var nEl = document.getElementById('filtroNumero');
+  filtroNumero = nEl ? nEl.value.trim().toUpperCase() : '';
+  renderizar();
+}
+
+function limpiarFiltro(id){
+  var el = document.getElementById(id);
+  if(el){ el.value=''; }
+  aplicarBusqueda();
+}
+
+/* ══════════════════════════════════════════════
+   DICCIONARIO OACI — Doc 8400 (abreviaturas → equivalencias)
+   Permite buscar por término en español o inglés y encontrar
+   NOTAMs que usan la abreviatura OACI correspondiente.
+══════════════════════════════════════════════ */
+var OACI_DICT = {
+  // Español → abreviatura OACI
+  'CERRADO':'CLSD','CIERRE':'CLSD','CERRADA':'CLSD',
+  'FUERA DE SERVICIO':'U/S','INUTILIZABLE':'U/S','INOPERATIVO':'INOP','INOPERATIVA':'INOP',
+  'NO DISPONIBLE':'NOT AVBL','NO AVBL':'NOT AVBL',
+  'PISTA':'RWY','PISTAS':'RWY',
+  'CALLE DE RODAJE':'TWY','CALLES DE RODAJE':'TWY',
+  'PLATAFORMA':'APN',
+  'UMBRAL':'THR',
+  'ILS':'ILS','SISTEMA DE ATERRIZAJE':'ILS',
+  'VOR':'VOR','RADIOFARO OMNIDIRECCIONAL':'VOR',
+  'DME':'DME','EQUIPO RADIOTELEMETRICO':'DME',
+  'NDB':'NDB','RADIOFARO NO DIRECCIONAL':'NDB',
+  'LUCES':'LGT','ILUMINACION':'LGT',
+  'OBSTACULO':'OBST','OBSTACULOS':'OBST',
+  'OBRAS EN PROGRESO':'WIP','OBRAS':'WIP','CONSTRUCCION':'WIP',
+  'PRECAUCION':'CTN','CUIDADO':'CTN',
+  'DEMORA':'DLA','DEMORADO':'DLA',
+  'SERVICIO':'SER','HORAS DE SERVICIO':'HR SER',
+  'COMBUSTIBLE':'FUEL','GASOLINA':'AVGAS',
+  'RESCATE':'RFFS','EXTINCION':'RFFS','SALVAMENTO':'RFFS',
+  'PAPI':'PAPI','APAPI':'APAPI','VASIS':'VASIS',
+  'BIRD':'BIRD HAZARD','AVES':'BIRD','PAJAROS':'BIRD',
+  'VUELO':'FLT','AERONAVE':'ACFT',
+  'TORRE':'TWR','CONTROL':'CTL',
+  'APROXIMACION':'APCH','APP':'APP',
+  'DESPEGUE':'TKOF','ATERRIZAJE':'LDG',
+  'FRECUENCIA':'FREQ',
+  'RPAS':'RPAS','DRONE':'RPAS','DRON':'RPAS',
+  'PARACAIDISMO':'PJE','PARACAIDISTAS':'PJE','LANZAMIENTO':'PJE',
+  'VERIFICACION DE VUELO':'FLTCK','FLTCK':'FLTCK',
+  'GLOBO':'BALLOON','SONDA':'BALLOON',
+  'ERUPTION VOLCANICA':'VA','CENIZAS VOLCANICAS':'VA','VOLCAN':'VA',
+  'ESPACIO AEREO':'AIRSPACE',
+  'ZONA RESTRINGIDA':'RR','ZONA PROHIBIDA':'RP','ZONA PELIGROSA':'RD',
+  'NOTAM TRIGGER':'TRIGGER NOTAM','AIRAC':'AIRAC',
+  'AIS':'AIS','ARO':'ARO','COM':'COM','MET':'MET',
+  'ALTIMETRO':'QNH','QNH':'QNH','QFE':'QFE',
+  'LOCALIZADOR':'LOC','ILS LOC':'LOC',
+  'TRAYECTORIA DE PLANEO':'ILS GP','GP':'GP',
+  'RADIOBALIZA':'MKR','OM':'ILS OM','MM':'ILS MM','IM':'ILS IM',
+  'PCR':'PCR','PCN':'PCN','PAVIMENTO':'PCR',
+  'RFFS':'RFFS','CAT':'CAT',
+  'DECLARADAS':'DECLARED DIST','TORA':'TORA','TODA':'TODA','ASDA':'ASDA','LDA':'LDA',
+  'DESPLAZADO':'DISPLACED','DTHR':'DTHR',
+  'TSA':'TSA','TRA':'TRA',
+  'GPS':'GPS','GNSS':'GNSS',
+  'CPDLC':'CPDLC','FANS':'FANS',
+  'WIP':'WIP','INPR':'INPR',
+  // Inglés común en NOTAMs
+  'CLOSED':'CLSD','CLOSE':'CLSD',
+  'UNSERVICEABLE':'U/S','OUT OF SERVICE':'U/S',
+  'NOT AVAILABLE':'NOT AVBL',
+  'CAUTION':'CTN',
+  'RUNWAY':'RWY','TAXIWAY':'TWY','APRON':'APN',
+  'THRESHOLD':'THR',
+  'APPROACH':'APCH',
+  'LIGHTS':'LGT','LIGHTING':'LGT',
+  'OBSTACLE':'OBST',
+  'WORK IN PROGRESS':'WIP',
+  'BIRD HAZARD':'BIRD HAZARD',
+  'FREQUENCY':'FREQ',
+  'FUEL':'FUEL',
+  'RESCUE':'RFFS','FIRE FIGHTING':'RFFS'
+};
+
+/* Expandir término de búsqueda con equivalencias OACI
+   Reglas:
+   - Si el término es una CLAVE EXACTA del diccionario → añadir su valor OACI
+   - Si el término tiene espacio → buscar claves que lo CONTENGAN como substring
+   - Si el término es corto (≤5 chars, sin espacios) → búsqueda LITERAL únicamente
+     (evita que "ILS" expanda a "ILS LOC", "ILS GP", etc.)
+*/
+function expandirTermino(termino){
+  var t = termino.toUpperCase().trim();
+  var terminos = [t];
+
+  // Coincidencia EXACTA con clave del diccionario (Spanish term → OACI)
+  if(OACI_DICT[t]){
+    var eq = OACI_DICT[t];
+    if(terminos.indexOf(eq)===-1) terminos.push(eq);
+    return terminos;   // coincidencia exacta: no buscar más
+  }
+
+  // Si el término tiene espacios (frase) → buscar claves que contengan el término
+  if(t.indexOf(' ') !== -1){
+    for(var clave in OACI_DICT){
+      if(clave.indexOf(t) !== -1){
+        var e2 = OACI_DICT[clave];
+        if(terminos.indexOf(e2)===-1) terminos.push(e2);
       }
+    }
+    return terminos;
+  }
+
+  // Término corto sin espacios (≤6 chars) → SOLO búsqueda literal
+  // (ILS, RWY, TWY, etc. se buscan exactamente como fueron escritos)
+  if(t.length <= 6) return terminos;
+
+  // Término largo sin espacios → buscar si alguna clave COMIENZA por él
+  for(var cl in OACI_DICT){
+    if(cl.indexOf(t) === 0){
+      var e3 = OACI_DICT[cl];
+      if(terminos.indexOf(e3)===-1) terminos.push(e3);
+    }
+  }
+  return terminos;
+}
+
+function notamVisible(n){
+  /* Filtro por tipo */
+  if(filtroActual==='est')  { if(!n.alarma || n.perm) return false; }
+  if(filtroActual==='sino') { if(n.alarma  || n.perm) return false; }
+  if(filtroActual==='perm') { if(!n.perm) return false; }
+
+  /* Filtro por número de NOTAM (acepta: A0864/26, 0864/26, 0864, etc.) */
+  if(filtroNumero.length >= 2){
+    var idStr = n.id.disp.toUpperCase();   // e.g. "A0864/2026"
+    var idRaw = n.id.raw.toUpperCase();    // e.g. "A0864/26"
+    // Normalizar búsqueda: extraer solo dígitos del número correlativo si es puro número
+    var numSolo = filtroNumero.replace(/[^0-9]/g,'');
+    var encontradoNum = false;
+    // Coincidencia directa (incluye prefijo serie)
+    if(idStr.indexOf(filtroNumero)!==-1 || idRaw.indexOf(filtroNumero)!==-1) encontradoNum=true;
+    // Solo el número correlativo (4 dígitos)
+    if(!encontradoNum && numSolo.length>=2){
+      var numCard = n.id.num; // 4-digit number from parsed ID
+      if(numCard && numCard.indexOf(numSolo)!==-1) encontradoNum=true;
+    }
+    if(!encontradoNum) return false;
+  }
+
+  /* Filtro por aeródromo OACI */
+  if(filtroAero.length >= 2){
+    var aero = (n.a || (n.aero ? n.aero.cod : '') || '').toUpperCase();
+    if(aero.indexOf(filtroAero) === -1) return false;
+  }
+
+  /* Filtro por código Q */
+  if(filtroQ.length >= 2){
+    var qStr = n.q ? (n.q.fir + '/' + n.q.q).toUpperCase() : '';
+    if(!qStr) qStr = (n.rawVis||n.raw||'').toUpperCase();
+    if(qStr.indexOf(filtroQ) === -1) return false;
+  }
+
+  /* Filtro por texto en E) — busca en campo E) o texto completo */
+  if(filtroTexto.length >= 2){
+    /* Prioridad: campo E) parseado; fallback: texto completo del NOTAM */
+    var eStr = (n.e
+      ? n.e
+      : (n.rawVis||n.raw||'')
+    ).toUpperCase();
+    var terminos = expandirTermino(filtroTexto);
+    var encontrado = false;
+    for(var ti=0; ti<terminos.length; ti++){
+      if(eStr.indexOf(terminos[ti]) !== -1){ encontrado=true; break; }
+    }
+    if(!encontrado) return false;
+  }
+
+  return true;
+}
+
+/* ══════════════════════════════════════════════
+   NAVEGACIÓN Y RESALTADO DE RESULTADOS
+══════════════════════════════════════════════ */
+var navIdx = 0;          // índice actual en lista de tarjetas visibles
+var navCardIds = [];     // array de card-N ids visible tras filtro
+
+/* Resalta coincidencias en un string HTML — envuelve en <span class="hl-match"> */
+function resaltarTexto(texto, terminos){
+  if(!terminos || !terminos.length || !texto) return esc(texto||'');
+  /* Escapar HTML primero */
+  var escapado = esc(texto);
+  /* Por cada término (de mayor a menor longitud para evitar solapamientos) */
+  var sorted = terminos.slice().sort(function(a,b){ return b.length-a.length; });
+  sorted.forEach(function(term){
+    if(!term || term.length < 2) return;
+    /* Case-insensitive replace */
+    var re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    escapado = escapado.replace(re, '<span class="hl-match">$1</span>');
+  });
+  return escapado;
+}
+
+/* Obtener términos activos para resaltar */
+function termActivos(){
+  var t = [];
+  if(filtroAero.length >= 2)   t.push(filtroAero);
+  if(filtroQ.length >= 2)      t.push(filtroQ);
+  if(filtroTexto.length >= 2)  { var ex=expandirTermino(filtroTexto); ex.forEach(function(e){ t.push(e); }); }
+  if(filtroNumero.length >= 2) t.push(filtroNumero);
+  return t;
+}
+
+/* Navegar entre resultados con flechas */
+function navNotam(dir){
+  if(!navCardIds.length) return;
+  /* Quitar foco actual */
+  var prev = document.getElementById(navCardIds[navIdx]);
+  if(prev) prev.classList.remove('nav-focus');
+  /* Mover índice */
+  navIdx = Math.max(0, Math.min(navCardIds.length-1, navIdx + dir));
+  /* Aplicar foco */
+  var cur = document.getElementById(navCardIds[navIdx]);
+  if(cur){
+    cur.classList.add('nav-focus');
+    cur.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  actualizarNavPos();
+}
+
+function actualizarNavPos(){
+  var pos  = document.getElementById('navPos');
+  var up   = document.getElementById('navUp');
+  var down = document.getElementById('navDown');
+  var arr  = document.getElementById('navArrows');
+  if(!pos) return;
+  if(navCardIds.length > 1){
+    arr.classList.add('visible');
+    pos.textContent = (navIdx+1)+'/'+navCardIds.length;
+    if(up)   up.disabled   = (navIdx === 0);
+    if(down) down.disabled = (navIdx === navCardIds.length-1);
+  } else {
+    arr.classList.remove('visible');
+  }
+}
+
+/* Teclas ↑ ↓ para navegación */
+document.addEventListener('keydown', function(e){
+  /* Solo si no hay foco en un input/textarea */
+  if(document.activeElement && (document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA')) return;
+  if(e.key==='ArrowUp')   { e.preventDefault(); navNotam(-1); }
+  if(e.key==='ArrowDown') { e.preventDefault(); navNotam(1); }
+});
+
+/* ══════════════════════════════════════════════
+   RENDERIZAR PIZARRA
+══════════════════════════════════════════════ */
+function renderizar(){
+  var board=document.getElementById('board');
+  var cnt  =document.getElementById('boardCount');
+
+  if(!notams.length){
+    board.innerHTML='<div class="empty-s"><div class="ei">📡</div>'
+      +'<p>Sin NOTAMs en pizarra.<br>Pegue y procese un NOTAM para comenzar.</p></div>';
+    cnt.textContent='';
+    return;
+  }
+
+  /* Contar visibles según filtro */
+  var visibles = 0;
+  for(var i=0;i<notams.length;i++){
+    if(notamVisible(notams[i])) visibles++;
+  }
+  cnt.textContent = (filtroActual==='todos' && !filtroAero && !filtroQ && !filtroTexto && !filtroNumero)
+    ? '('+visibles+' NOTAM'+(visibles!==1?'s':'')+')'
+    : '('+visibles+' de '+notams.length+')';
+  var fc = document.getElementById('filtroCount');
+  if(fc) fc.textContent = (filtroAero||filtroQ||filtroTexto||filtroNumero)
+    ? visibles+' resultado'+(visibles!==1?'s':'') : '';
+
+  /* Generar HTML solo para los visibles — usando índice REAL para eliminar/alarma */
+  var html='';
+  navCardIds = [];
+  var terminos = termActivos();
+  for(var i=0;i<notams.length;i++){
+    if(!notamVisible(notams[i])) continue;
+    navCardIds.push('card-'+i);
+    html+=card(notams[i], i, terminos);
+  }
+
+  if(!html){
+    board.innerHTML='<div class="empty-s"><div class="ei">🔍</div>'
+      +'<p>Sin NOTAMs con el filtro seleccionado.</p></div>';
+    return;
+  }
+
+  board.innerHTML=html;
+
+  /* restaurar alarmas activas */
+  for(var k in alarmaON){
+    if(alarmaON[k]){
+      var sEl=document.getElementById('sil-'+k);
+      if(sEl) sEl.style.display='block';
+      var cEl=document.getElementById('card-'+k);
+      if(cEl) cEl.classList.add('ringing');
+    }
+  }
+
+  tickRelojes();
+}
+
+/* ══════════════════════════════════════════════
+   TICK DE RELOJES INDIVIDUALES
+══════════════════════════════════════════════ */
+function tickRelojes(){
+  var ahora=Date.now();
+  var p=function(x){return('0'+x).slice(-2);};
+
+  for(var i=0;i<notams.length;i++){
+    var n=notams[i];
+    if(n.perm||!n.expTs) continue;
+
+    var ckEl    =document.getElementById('ck-'+i);
+    var restEl  =document.getElementById('ck-rest-'+i);
+    var stbEl   =document.getElementById('stbdg-'+i);
+    var stlblEl =document.getElementById('stlbl-'+i);
+    var dotEl   =document.getElementById('dot-'+i);
+    var cardEl  =document.getElementById('card-'+i);
+    var silEl   =document.getElementById('sil-'+i);
+    if(!ckEl) continue;
+
+    var diff=n.expTs-ahora;
+
+    /* ── EXPIRADO ── */
+    if(diff<=0){
+      ckEl.textContent='EXPIRADO'; ckEl.className='ck-display ck-gray';
+      if(restEl) restEl.textContent='Este NOTAM ha vencido';
+      if(stbEl){stbEl.textContent='EXPIRADO';stbEl.className='bdg b-exp';}
+      if(stlblEl) stlblEl.textContent='Expirado';
+      if(cardEl) cardEl.classList.add('expired');
+      pararAlarma(i); continue;
+    }
+
+    /* ── tiempo restante ── */
+    var seg  =Math.floor(diff/1000);
+    var dias =Math.floor(seg/86400);
+    var horas=Math.floor((seg%86400)/3600);
+    var mins =Math.floor((seg%3600)/60);
+    var segs =seg%60;
+
+    /* display del reloj */
+    var dsp;
+    if(dias>0)       dsp=dias+'d '+p(horas)+':'+p(mins)+':'+p(segs);
+    else if(horas>0) dsp=p(horas)+':'+p(mins)+':'+p(segs);
+    else             dsp=p(mins)+':'+p(segs);
+    ckEl.textContent=dsp;
+
+    /* texto descriptivo */
+    var partes=[];
+    if(dias>0)  partes.push(dias+' día'+(dias!==1?'s':''));
+    if(horas>0) partes.push(horas+' hora'+(horas!==1?'s':''));
+    if(mins>0)  partes.push(mins+' minuto(s)');
+    partes.push(segs+' segundo(s)');
+    if(restEl) restEl.textContent=partes.join(', ')+' restantes';
+
+    /* color: magenta < 1h, azul en caso contrario */
+    ckEl.className='ck-display '+(diff<3600000?'ck-red':'ck-blue');
+
+    /* badge estado */
+    if(stbEl){
+      if(diff<300000)      {stbEl.textContent='MÁS URGENTE';stbEl.className='bdg b-mas-urg';}
+      else if(diff<3600000){stbEl.textContent='URGENTE';    stbEl.className='bdg b-urg';}
+      else                 {stbEl.textContent='ACTIVO';     stbEl.className='bdg b-act';}
+    }
+
+    /* label + punto */
+    if(dotEl) dotEl.className='st-dot'+(alarmaON[i]?' ring':'');
+    if(!alarmaON[i]&&stlblEl){
+      stlblEl.textContent=n.alarma?'Con alarma EST':'Sin EST - Sin Alarma';
+    }
+
+    /* disparar alarma ≤5 min */
+    if(n.alarma&&!n.silenciado&&diff<=600000&&!alarmaON[i]) iniciarAlarma(i);
+  }
+}
+setInterval(tickRelojes, 1000);
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+var _tt;
+function toast(msg,tipo){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(tipo?' '+tipo:'');
+  clearTimeout(_tt); _tt=setTimeout(function(){t.className='toast';},3500);
+}
+
+/* ══════════════════════════════════════════════
+   AUTO-FETCH — aviationweather.gov via CORS proxies
+   Fuente: aviationweather.gov/api/data/notam (sin clave, datos globales)
+   El texto RAW retornado se parsea directamente con nuestro parser.
+══════════════════════════════════════════════ */
+var autoRefreshTimer = null;
+var nextRefreshSecs  = 0;
+var nextRefreshTick  = null;
+
+function toggleFetchPanel(){
+  var body  = document.getElementById('fetchBody');
+  var arrow = document.getElementById('fetchArrow');
+  var open  = body.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+function addChip(code){
+  var inp = document.getElementById('fetchIcao');
+  var vals = inp.value.split(',').map(function(s){return s.trim().toUpperCase();}).filter(Boolean);
+  if(vals.indexOf(code) === -1){ vals.push(code); }
+  inp.value = vals.join(',');
+}
+
+function setFetchStatus(msg, cls){
+  var el = document.getElementById('fetchStatus');
+  el.innerHTML = msg;
+  el.className = 'fetch-status ' + (cls||'');
+}
+
+/* procesarTextoRaw definida más abajo */
+
+/* ── Chips de selección ── */
+var selectedChips = new Set();
+
+function toggleChip(el, code){
+  if(selectedChips.has(code)){
+    selectedChips.delete(code);
+    el.classList.remove('sel');
+  } else {
+    selectedChips.add(code);
+    el.classList.add('sel');
+  }
+}
+
+/* ── Todos los aeródromos FIR SPIM ── */
+var ALL_FIR_SPIM = [
+  /* Internacionales */
+  'SPJC','SPQT','SPTN','SPQU','SPHI','SPCL','SPYL','SPZO','SPRU','SPJL',
+  'SPTU','SPUR','SPME','SPLP',
+  /* Nacionales */
+  'SPHY','SPJR','SPEO','SPST','SPHZ','SPJJ','SPMS','SPNC','SPHO',
+  'SPZA','SPJI','SPJE','SPPY','SPLO','SPSO','SPCH','SPGM','SPJA',
+  'SPBC','SPJN','SPMF','SPRM','SPIP','SPAS','SPDR','SPBS','SPQN',
+  'SPBR','SPEQ','SPAY','SPOA','SPIZ','SPBL','SPBB','SPIL','SPCM',
+  'SPMR','SPDO','SPBQ','SPLC','SPJB','SPSP','SPHV','SPTP','SPWT',
+  'SPLX','SPLH','SPLA','SPIN'
+];
+
+function fetchFirCompleta(){
+  /* Buscar todos los aeródromos FIR SPIM de una vez */
+  fetchConCodigos(ALL_FIR_SPIM, true);
+}
+
+function fetchSeleccionados(){
+  var inp = document.getElementById('fetchIcao').value;
+  var fromInput = inp.split(',')
+    .map(function(s){ return s.trim().toUpperCase(); })
+    .filter(function(s){ return /^[A-Z]{4}$/.test(s); });
+  var fromChips = Array.from(selectedChips);
+  /* Combinar chips seleccionados + campo manual */
+  var combined = fromChips.concat(fromInput.filter(function(c){
+    return fromChips.indexOf(c)===-1;
+  }));
+  if(!combined.length){
+    setFetchStatus('⚠ Seleccione aeródromos o ingrese códigos ICAO.','fetch-err');
+    return;
+  }
+  fetchConCodigos(combined, false);
+}
+
+/* ════════════════════════════════════════════════════
+   MOTOR DE BÚSQUEDA — NOTAM Perú API (propia)
+   Endpoint: GET /v1/notams?icao=SPJC,SPZO,...
+   Fuente de datos: FAA/ICAO via notam-peru-api
+   Repositorio: github.com/tu-usuario/notam-peru-api
+   
+   CONFIGURACIÓN: Cambia NOTAM_API_BASE a la URL donde
+   hayas desplegado tu notam-peru-api (Railway, Render, etc.)
+   Ejemplo Railway:  https://notam-peru-api.up.railway.app
+   Ejemplo Render:   https://notam-peru-api.onrender.com
+   Ejemplo local:    http://localhost:8000
+════════════════════════════════════════════════════ */
+
+/* ▼▼▼ CONFIGURA AQUÍ LA URL DE TU API CORPAC ▼▼▼ */
+var NOTAM_API_BASE = window.location.origin;
+/* ▲▲▲ ──────────────────────────────────────────── ▲▲▲ */
+
+
+
+/* ── Parsear respuesta de CORPAC API → objetos NOTAM ── */
+function parsearCorpacAPI(json){
+  var notams = [];
+  try{
+    var d = typeof json==='string' ? JSON.parse(json) : json;
+    notams = d.notams || [];
+  }catch(e){ return []; }
+  return notams;
+}
+
+/* ── Buscar FIR SPIM completa via CORPAC API ── */
+function fetchLaminarFIR(onSuccess, onError){
+  var url = NOTAM_API_BASE + '/notams';
+  fetch(url, { headers: { 'Accept': 'application/json' } })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' al consultar CORPAC API');
+    return r.json();
+  })
+  .then(function(json){
+    var items = parsearCorpacAPI(json);
+    if(items.length){
+      onSuccess(items, 'CORPAC API');
+    } else {
+      onError('Sin NOTAMs en FIR SPIM');
+    }
+  })
+  .catch(function(err){ onError(err); });
+}
+
+/* ── Buscar aeródromos específicos via CORPAC API ── */
+function fetchLaminarAero(codes, onSuccess, onError){
+  var url = NOTAM_API_BASE + '/notams';
+  fetch(url, { headers: { 'Accept': 'application/json' } })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' al consultar CORPAC API');
+    return r.json();
+  })
+  .then(function(json){
+    var items = parsearCorpacAPI(json);
+    if(items.length){
+      onSuccess(items, 'CORPAC API');
+    } else {
+      onError('Sin NOTAMs para: '+codes.join(','));
+    }
+  })
+  .catch(function(err){ onError(err); });
+}
+
+/* Función principal de búsqueda */
+function fetchConCodigos(codes, esFirCompleta){
+  if(!codes.length) return;
+  var allBtn=document.querySelector('.btn-fetch-all');
+  var selBtn=document.getElementById('btnFetch');
+  if(allBtn) allBtn.disabled=true;
+  if(selBtn) selBtn.disabled=true;
+
+  var label=esFirCompleta?'FIR SPIM':codes.slice(0,4).join(',')+(codes.length>4?'…':'');
+  setFetchStatus('<span class="spin">⟳</span> Consultando CORPAC API — '+label+'...','fetch-info');
+
+  function finalizar(items, fuente){
+    if(allBtn) allBtn.disabled=false;
+    if(selBtn) selBtn.disabled=false;
+    if(!items || !items.length){
+      setFetchStatus('ℹ️ Sin NOTAMs activos ('+fuente+')','');
+      return;
+    }
+    var r=procesarCorpacItems(items);
+    if(r.added>0){
+      sortNotams();
+      guardar(); renderizar();
+    }
+    var msg = r.added===0&&r.dupes===0
+      ? 'ℹ️ Sin NOTAMs nuevos ['+fuente+']'
+      : '✅ '+r.added+' NOTAM'+(r.added!==1?'s':'')+' recibido'+(r.added!==1?'s':'')
+        +(r.dupes>0?' · '+r.dupes+' ya existían':'')
+        +' ['+fuente+']';
+    setFetchStatus(msg, r.added>0?'fetch-ok':'');
+    if(r.added>0) toast(msg,'ok');
+  }
+
+  function onError(err){
+    if(allBtn) allBtn.disabled=false;
+    if(selBtn) selBtn.disabled=false;
+    setFetchStatus('❌ Error: '+err,'fetch-err');
+  }
+
+  if(esFirCompleta){
+    fetchLaminarFIR(finalizar, onError);
+  } else {
+    fetchLaminarAero(codes, finalizar, onError);
+  }
+}
+
+
+/* ── Procesar items de CORPAC API → objetos NOTAM ── */
+function procesarCorpacItems(items){
+  var added=0, dupes=0;
+  items.forEach(function(item){
+    var id = item.id || '';
+    if(!id) return;
+    
+    // Check for duplicates
+    var dup = notams.some(function(n){ return n.id && n.id.raw === id; });
+    if(dup){ dupes++; return; }
+    
+    // Build NOTAM object matching expected format
+    var rawText = item.raw_text || '';
+    var serie = id.charAt(0);
+    var numMatch = id.match(/(\d{4})\/(\d{2,4})/);
+    var num = numMatch ? numMatch[1] : '';
+    var year = numMatch ? numMatch[2] : '';
+    if(year.length === 2) year = '20' + year;
+    
+    // Parse B and C dates from raw text
+    var bMatch = rawText.match(/B\)\s*(\d{10})/i);
+    var cMatch = rawText.match(/C\)\s*(\d{10})\s*(EST)?/i);
+    var cPerm = /C\)\s*PERM/i.test(rawText);
+    var dMatch = rawText.match(/D\)\s*(.+)/i);
+    
+    var bTs = bMatch ? s10(bMatch[1]) : null;
+    var cTs = cMatch ? s10(cMatch[1]) : null;
+    var cEst = cMatch ? !!cMatch[2] : false;
+    
+    var cf = cPerm
+      ? { perm:true, ts:null, est:false, raw:'PERM' }
+      : (cTs ? { perm:false, ts:cTs, est:cEst, raw:cMatch?cMatch[1]:'' } : null);
+    
+    var expTs = (cf && !cf.perm && cf.ts) ? cf.ts : null;
+    
+    // Extract description from E field
+    var eMatch = rawText.match(/E\)\s*([\s\S]+?)(?=\s*[A-G]\)|$)/i);
+    var desc = eMatch ? eMatch[1].trim() : '';
+    
+    // Use published_at from API if available, otherwise parse from B field
+    var publishedAt = item.published_at || null;
+    var fechaTs = publishedAt ? new Date(publishedAt).getTime() : bTs;
+    var fecha = publishedAt 
+      ? publishedAt.replace('T', ' ').replace(':00', '') + ' UTC'
+      : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null);
+    
+    // Build display text
+    var rawVis = id + '/' + year + ' NOTAMN\n'
+      + (item.location ? 'A) ' + item.location + '\n' : '')
+      + 'B) ' + (bMatch ? bMatch[1] : 'UNKNOWN') + '\n'
+      + 'C) ' + (cPerm ? 'PERM' : (cMatch ? cMatch[1] + (cEst ? ' EST' : '') : 'UNKNOWN')) + '\n'
+      + (dMatch ? 'D) ' + dMatch[1] + '\n' : '')
+      + 'E) ' + desc;
+    
+    notams.push({
+      id: {
+        raw: id,
+        disp: id + '/' + year,
+        serie: serie,
+        num: num,
+        year: year,
+        key: 'n_' + id.replace(/\//g, '_')
+      },
+      raw: rawVis,
+      rawVis: rawVis,
+      c: cf,
+      b: bTs ? { ts: bTs, raw: bMatch ? bMatch[1] : '' } : null,
+      a: item.location || '',
+      q: null,
+      e: desc,
+      aero: { cod: item.location || '', nom: FIR_SPIM[item.location] || '' },
+      fecha: fecha,
+      fechaTs: fechaTs,
+      publishedAt: item.published_at || null,
+      tipo: null,
+      expTs: expTs,
+      perm: cf ? cf.perm : false,
+      alarma: cf ? (!cf.perm && cf.est) : false,
+      silenciado: false,
+      fuenteCORPAC: true
     });
-    guardar();render();
-    st.innerHTML='<span class="fetch-ok">✓ '+data.total_count+' NOTAMs cargados desde CORPAC ('+data.extraction_date+')</span>';
-    toast(data.total_count+' NOTAMs actualizados desde CORPAC','ok');
-  }catch(e){
-    st.innerHTML='<span class="fetch-err">✗ Error: '+esc(e.message)+'</span>';
-    toast('Error al consultar CORPAC API','err');
-  }
+    added++;
+  });
+  return {added:added, dupes:dupes};
 }
 
-var refreshCount=0;
+/* ── Procesar texto RAW → objetos NOTAM (legacy) ── */
+function procesarTextoRaw(rawText){
+  /* Limpiar ruido de footer CORPAC */
+  rawText = rawText.replace(/\*{2,}FIN DE REPORTE\*{2,}/gi,'').replace(/\bImprimir\b/gi,'');
+  var normalizado = rawText
+    .replace(/=[ \t]*\n/g, '\n\n')
+    .replace(/\r\n/g, '\n');
+  var bloques = separar(normalizado);
+  var added=0, dupes=0;
+  bloques.forEach(function(b){
+    var obj=construir(b); if(!obj) return;
+    var dup=notams.some(function(n){ return n.id.raw===obj.id.raw; });
+    if(dup){ dupes++; return; }
+    notams.push(obj); added++;
+  });
+  return {added:added, dupes:dupes};
+}
+
+/* ── Auto-actualizar cada 60 segundos ── */
+var autoRefreshTimer=null, nextRefreshSecs=0, nextRefreshTick=null;
+
 function toggleAutoRefresh(){
-  if(document.getElementById('autoRefresh').checked){
+  var on = document.getElementById('autoRefresh').checked;
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer=null; }
+  if(nextRefreshTick) { clearInterval(nextRefreshTick);  nextRefreshTick=null; }
+  document.getElementById('nextRefreshLabel').textContent='';
+  if(on){
+    nextRefreshSecs=60;
     autoRefreshTimer=setInterval(function(){
-      fetchFIR();
-      refreshCount++;
-      document.getElementById('nextRefreshLabel').textContent='(refresh #'+refreshCount+')';
-    },AUTO_REFRESH_MS);
-    toast('Auto-actualización activada (1 min)','ok');
-  }else{
-    clearInterval(autoRefreshTimer);autoRefreshTimer=null;
-    toast('Auto-actualización desactivada','ok');
+      fetchFirCompleta(); nextRefreshSecs=60;
+    },60000);
+    nextRefreshTick=setInterval(function(){
+      nextRefreshSecs--;
+      var m=Math.floor(nextRefreshSecs/60), s=nextRefreshSecs%60;
+      var p=function(x){return('0'+x).slice(-2);};
+      document.getElementById('nextRefreshLabel').textContent='(próx: '+p(m)+':'+p(s)+')';
+      if(nextRefreshSecs<=0) nextRefreshSecs=60;
+    },1000);
   }
 }
 
-// ═══ INIT ═══
+/* ── Diagnóstico de conectividad ── */
+function diagnosticar(){
+  var btn = document.getElementById('btnDiag');
+  var res = document.getElementById('diagResult');
+  btn.disabled = true;
+  res.innerHTML = '<span class="spin">⟳</span> Probando conexión con CORPAC API...';
+
+  var t0 = Date.now();
+  fetch(NOTAM_API_BASE + '/health')
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(j){
+      var ms = Date.now() - t0;
+      var isHealthy = j.status === 'healthy';
+      res.innerHTML = (isHealthy ? '✅' : '⚠️') + ' <b>CORPAC API</b>: ' 
+        + (isHealthy ? 'Operativa' : 'Parcialmente disponible') 
+        + ' (' + ms + 'ms)<br>'
+        + '<small style="color:#94a3b8">Endpoint: ' + NOTAM_API_BASE + '/notams</small>';
+      btn.disabled = false;
+    })
+    .catch(function(err){
+      var ms = Date.now() - t0;
+      res.innerHTML = '❌ <b>CORPAC API</b>: Sin respuesta (' + ms + 'ms)<br>'
+        + '<small style="color:#94a3b8">Asegúrese de que el servidor esté ejecutándose en ' + NOTAM_API_BASE + '</small>';
+      btn.disabled = false;
+    });
+}
+
+/* ══════════════════════════════════════════════
+   INICIO
+══════════════════════════════════════════════ */
 cargar();
-if(notams.length)render();
-fetchFIR();
-toggleAutoRefresh();
+sortNotams();
+renderizar();
+updateSortBadge();
+
+/* reactivar alarmas al recargar */
+setTimeout(function(){
+  var ahora=Date.now();
+  for(var i=0;i<notams.length;i++){
+    var n=notams[i];
+    if(!n.expTs||!n.alarma||n.silenciado) continue;
+    if(n.expTs-ahora>0 && n.expTs-ahora<=600000) iniciarAlarma(i);
+  }
+},500);
+
+/* Búsqueda automática al cargar la página */
+setTimeout(function(){
+  setFetchStatus('<span class="spin">⟳</span> Buscando NOTAMs FIR SPIM al inicio...','fetch-info');
+  fetchFirCompleta();
+}, 1200);
 </script>
 </body>
 </html>
