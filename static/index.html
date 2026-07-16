@@ -47,7 +47,7 @@ body {
 
 /* ── LAYOUT ─────────────────────────────── */
 .wrap  { max-width:1400px; margin:0 auto; padding:16px 16px 30px; }
-.cols  { display:grid; grid-template-columns:390px 1fr; gap:16px; align-items:start; }
+.cols  { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
 
 /* ── STICKY PANEL HEADERS ─────────────────── */
 /* CSS custom properties for header heights — easy to tune */
@@ -651,8 +651,8 @@ textarea::placeholder { color:#a0aab8; }
 <div class="wrap">
   <div class="cols">
 
-    <!-- ════ LEFT: ENTRADA ════ -->
-    <div class="left-sticky-col">
+    <!-- ════ LEFT: ENTRADA (OCULTA — solo API) ════ -->
+    <div class="left-sticky-col" style="display:none !important;">
       <div class="panel">
         <div class="ph">
           <span class="ph-icon">✈</span>
@@ -823,6 +823,25 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
     </div>
 
     <!-- ════ RIGHT: PIZARRA ════ -->
+
+    <!-- AUTO-REFRESH TOOLBAR -->
+    <div id="autoRefreshBar" style="grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:10px 18px;margin-bottom:10px;background:linear-gradient(135deg,#f0f4fc,#e8edf8);border:1px solid #c8d8f0;border-radius:10px;font-size:.78rem;color:#4b5563;">
+      <label class="toggle-sw" style="margin:0;">
+        <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()" checked>
+        <span class="toggle-slider"></span>
+      </label>
+      <span>Auto-actualizar cada <b>60 seg</b></span>
+      <span id="nextRefreshLabel" style="color:#6b7280;"></span>
+      <span style="flex:1;"></span>
+      <button class="btn-fetch-all" onclick="fetchFirCompleta()" style="padding:6px 16px;font-size:.73rem;">
+        🌐 Buscar todos los NOTAMs FIR SPIM
+      </button>
+      <button class="btn-diag" id="btnDiag" onclick="diagnosticar()" style="padding:6px 14px;font-size:.73rem;margin:0;">
+        🔬 Probar conexión
+      </button>
+      <span id="diagResult" style="font-size:.67rem;color:#7a8a9a;"></span>
+    </div>
+
     <div class="panel right-panel">
       <div class="board-ph">
         <div class="board-ph-left">
@@ -2454,7 +2473,6 @@ function diagnosticar(){
 cargar();
 sortNotams();
 renderizar();
-updateSortBadge();
 
 /* reactivar alarmas al recargar */
 setTimeout(function(){
@@ -2471,6 +2489,9 @@ setTimeout(function(){
   setFetchStatus('<span class="spin">⟳</span> Buscando NOTAMs FIR SPIM al inicio...','fetch-info');
   fetchFirCompleta();
 }, 1200);
+
+/* Activar auto-refresh por defecto */
+setTimeout(function(){ toggleAutoRefresh(); }, 1500);
 </script>
 </body>
 </html>
