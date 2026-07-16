@@ -55,23 +55,26 @@ with sync_playwright() as p:
             // Split by newlines
             var lines = body.split('\\n');
             
-            // Find the NOTAM ID line and publication date
+            // Find NOTAM ID line and publication date (DD/MM/YYYY HH:MM:SS before the ID)
             var notamId = '';
             var publishedAt = '';
             var notamStartIdx = 0;
             
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i].trim();
-                // Check if this line contains the NOTAM ID (e.g., A2402/26 NOTAMN)
+                
+                // Check if this line is the NOTAM ID (e.g., A2402/26 NOTAMN)
                 var idMatch = line.match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
                 if (idMatch) {
                     notamId = idMatch[1];
                     notamStartIdx = i;
                     break;
                 }
+                
                 // Check for publication date pattern (DD/MM/YYYY HH:MM:SS)
-                var dateMatch = line.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
-                if (dateMatch && !notamId) {
+                // This appears BEFORE the NOTAM ID line
+                var dateMatch = line.match(/^(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})$/);
+                if (dateMatch) {
                     publishedAt = dateMatch[1];
                 }
             }
