@@ -1735,13 +1735,13 @@ function card(n, idx, terminos){
   btnsHtml+='</div>';
 
   /* pie emisión */
-  var emitHtml=n.fecha
-    ? '<div class="emit-foot">📅 Publicado: <b>'+esc(n.fecha.trim())+'</b></div>'
-    : '';
-
-  /* si hay published_at del API, mostrarlo también */
-  if(n.publishedAt && n.fecha && n.publishedAt !== n.fecha){
+  var emitHtml='';
+  if(n.publishedAt){
+    // Show real publication date from scraper
     emitHtml='<div class="emit-foot">📅 Publicado: <b>'+esc(n.publishedAt.trim())+'</b></div>';
+  } else if(n.fecha){
+    // Fallback to fecha (from B field)
+    emitHtml='<div class="emit-foot">📅 Publicado: <b>'+esc(n.fecha.trim())+'</b></div>';
   }
 
   /* ── aeródromo HTML con nombre completo ── */
@@ -2445,6 +2445,11 @@ function procesarCorpacItems(items){
     
     // Format publishedAt for display (already in correct format from scraper)
     var publishedAtDisplay = publishedAt || null;
+    
+    // Debug: log if published_at is missing
+    if(!publishedAt && item.id) {
+      console.log('Missing published_at for NOTAM:', item.id);
+    }
     
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'
