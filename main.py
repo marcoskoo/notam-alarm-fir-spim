@@ -152,6 +152,10 @@ def get_notam_data() -> dict:
                         b = b_match.group(1)
                         published_at = f"20{b[4:6]}-{b[2:4]}-{b[0:2]}T{b[6:8]}:{b[8:10]}:00"
                     
+                    # Use published_at from scraper if available (real publication date)
+                    if n.get("published_at"):
+                        published_at = n["published_at"]
+                    
                     notams.append({
                         "id": n["id"],
                         "type": n.get("type", ""),

@@ -1205,15 +1205,22 @@ function sortNotams(){
   notams.sort(function(a,b){
     if(sortMode === 'publication'){
       // Último publicado primero (más reciente primero)
-      // Usar publishedAt si está disponible, sino usar fechaTs
-      var ta = a.publishedAt ? new Date(a.publishedAt).getTime() : (a.fechaTs || 0);
-      var tb = b.publishedAt ? new Date(b.publishedAt).getTime() : (b.fechaTs || 0);
+      // Parse date from DD/MM/YYYY HH:MM:SS format
+      var parseDate = function(dateStr){
+        if(!dateStr) return 0;
+        // Handle DD/MM/YYYY HH:MM:SS format
+        var m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+        if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])).getTime();
+        // Handle ISO format
+        var d = new Date(dateStr);
+        return isNaN(d) ? 0 : d.getTime();
+      };
       
-      // Si las fechas son iguales, ordenar por número de serie y año correlativo
+      var ta = parseDate(a.publishedAt || a.fecha);
+      var tb = parseDate(b.publishedAt || b.fecha);
+      
+      // Si las fechas son iguales, ordenar por año y número de serie correlativo
       if(ta === tb){
-        // Extraer número y año del NOTAM (ej: A0001/25 → num=1, year=25)
-        var numA = parseInt(a.id.num) || 0;
-        var numB = parseInt(b.id.num) || 0;
         var yearA = parseInt(a.id.year) || 0;
         var yearB = parseInt(b.id.year) || 0;
         
@@ -1221,6 +1228,8 @@ function sortNotams(){
         if(yearA !== yearB) return yearB - yearA;
         
         // Si año igual, comparar por número (mayor primero)
+        var numA = parseInt(a.id.num) || 0;
+        var numB = parseInt(b.id.num) || 0;
         return numB - numA;
       }
       
@@ -2429,13 +2438,13 @@ function procesarCorpacItems(items){
     
     // Use published_at from API if available, otherwise parse from B field
     var publishedAt = item.published_at || null;
-    var fechaTs = publishedAt ? new Date(publishedAt).getTime() : bTs;
+    var fechaTs = publishedAt ? new Date(publishedAt.replace(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6')).getTime() : bTs;
     var fecha = publishedAt 
-      ? publishedAt.replace('T', ' ').replace(':00', '') + ' UTC'
+      ? publishedAt  // Already in DD/MM/YYYY HH:MM:SS format from scraper
       : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null);
     
-    // Format publishedAt for display (replace T with double space)
-    var publishedAtDisplay = publishedAt ? publishedAt.replace('T', '  ') : null;
+    // Format publishedAt for display (already in correct format from scraper)
+    var publishedAtDisplay = publishedAt || null;
     
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'

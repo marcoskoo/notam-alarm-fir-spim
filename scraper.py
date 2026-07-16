@@ -88,6 +88,21 @@ with sync_playwright() as p:
                 if (locMatch) location = locMatch[1];
             }
             
+            // Extract publication date from table row (DD/MM/YYYY HH:MM:SS)
+            var publishedAt = '';
+            var tableRow = link.closest('tr');
+            if (tableRow) {
+                var cells = tableRow.querySelectorAll('td');
+                for (var i = 0; i < cells.length; i++) {
+                    var cellText = cells[i].textContent.trim();
+                    var dateMatch = cellText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                    if (dateMatch) {
+                        publishedAt = dateMatch[1];
+                        break;
+                    }
+                }
+            }
+            
             // Type
             var typeMatch = firstLine.match(/(NOTAM[NRC])/);
             var type = typeMatch ? typeMatch[1] : '';
@@ -96,6 +111,7 @@ with sync_playwright() as p:
                 id: notamId,
                 type: type,
                 location: location,
+                published_at: publishedAt,
                 raw_text: body.replace(/\\n/g, '\\r\\n'),
                 q_line: qLine,
                 details: details.replace(/\\n/g, '\\r\\n')
