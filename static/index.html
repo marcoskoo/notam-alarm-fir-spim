@@ -310,8 +310,7 @@ textarea::placeholder { color:#a0aab8; }
 .bdg-tipo-r { background:#fef3c7; color:#92400e; }
 .bdg-tipo-c { background:#fee2e2; color:#991b1b; }
 .tipo-ref   { font-size:.67rem; color:#78716c; font-style:italic; }
-/* Fecha de publicación */
-.bdg-pub    { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.67rem; font-weight:700; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; }
+  /* Fecha de publicación — eliminada */
 
 /* ── AERÓDROMO display ── */
 .aero-strip {
@@ -413,15 +412,7 @@ textarea::placeholder { color:#a0aab8; }
 .btn-no-alm  { background:#e2e8f0; color:#94a3b8; cursor:default; } /* "Sin Alarma" plano */
 .btn-del     { background:linear-gradient(135deg,#e0306a,#b81050); color:#fff; }
 
-/* ── PIE: fecha de publicación ── */
-.emit-foot {
-  padding:5px 13px 6px;
-  background:#f8fafc; border-top:1px solid #e2e8f0;
-  font-size:.7rem; color:#94a3b8;
-  display:flex; align-items:center; gap:5px;
-  border-radius:0 0 7px 7px;
-}
-.emit-foot b { font-family:'Courier New',monospace; color:#475569; font-weight:700; }
+/* ── PIE: fecha de publicación — eliminado ── */
 /* ── AUTO-FETCH PANEL ───────────────────── */
 .fetch-panel {
   margin-top:14px;
@@ -567,11 +558,6 @@ textarea::placeholder { color:#a0aab8; }
 .filter-btn.f-perm { border-color:#7dd3fc; color:#0c4a6e; }
 .filter-btn.f-perm:hover { border-color:#0ea5e9; background:#f0f9ff; }
 .filter-btn.f-perm.active { background:linear-gradient(135deg,#0369a1,#0ea5e9); color:#fff; border-color:#0369a1; box-shadow:0 2px 8px rgba(14,165,233,.35); }
-
-/* ÚLTIMO PUBLICADO — naranja/ámbar */
-.filter-btn.f-ultpub { border-color:#fcd34d; color:#92400e; }
-.filter-btn.f-ultpub:hover { border-color:#f59e0b; background:#fffbeb; }
-.filter-btn.f-ultpub.active { background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; border-color:#d97706; box-shadow:0 2px 8px rgba(245,158,11,.35); }
 
 /* ── Search filter inputs ── */
 .filter-search-row {
@@ -845,7 +831,6 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
           <span class="board-count" id="boardCount"></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span class="sort-badge" id="sortBadge" onclick="toggleSort()" style="cursor:pointer;" title="Click para cambiar orden">Ordenado por Vencimiento</span>
           <div class="nav-arrows" id="navArrows">
             <button class="nav-btn" id="navUp"   onclick="navNotam(-1)" title="NOTAM anterior (↑)">▲</button>
             <span class="nav-pos" id="navPos">1/1</span>
@@ -893,15 +878,6 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
             <path d="M1.5 8C1.5 8 3 4.5 5.5 4.5S8 7 8 8s1 3.5 2.5 3.5S14.5 8 14.5 8s-1.5-3.5-4-3.5S8 7 8 8 7 11.5 5.5 11.5 1.5 8 1.5 8z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>
           </svg>
           PERM
-        </button>
-
-        <!-- ÚLTIMO PUBLICADO -->
-        <button class="filter-btn f-ultpub" id="fbUltPub" onclick="setFiltro('ultpub')">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Último Publicado
         </button>
 
       </div>
@@ -985,14 +961,12 @@ var alarmas = {};       // idx → intervalId
 var alarmaON = {};      // idx → bool
 var actx = null;
 var filtroActual = 'todos';   // 'todos' | 'est' | 'sino' | 'perm'
-var sortMode = 'expiration';  // 'expiration' | 'publication'
 
 /* ══════════════════════════════════════════════
    PERSISTENCIA
 ══════════════════════════════════════════════ */
-function guardar(){ try{ localStorage.setItem(SK, JSON.stringify(notams)); localStorage.setItem(SK+'_sort', sortMode); }catch(e){} }
+function guardar(){ try{ localStorage.setItem(SK, JSON.stringify(notams)); }catch(e){} }
 function cargar(){  try{ var d=localStorage.getItem(SK); if(d) notams=JSON.parse(d); }catch(e){ notams=[]; }
-  try{ var sm=localStorage.getItem(SK+'_sort'); if(sm) sortMode=sm; }catch(e){}
 }
 
 /* ══════════════════════════════════════════════
@@ -1203,66 +1177,10 @@ function fechaToTs(fechaStr){
 // Ordenar notams según el modo actual
 function sortNotams(){
   notams.sort(function(a,b){
-    if(sortMode === 'publication'){
-      // Último publicado primero (más reciente primero)
-      // Parse date from DD/MM/YYYY HH:MM:SS format
-      var parseDate = function(dateStr){
-        if(!dateStr) return 0;
-        // Handle DD/MM/YYYY HH:MM:SS format
-        var m = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
-        if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])).getTime();
-        // Handle ISO format
-        var d = new Date(dateStr);
-        return isNaN(d) ? 0 : d.getTime();
-      };
-      
-      var ta = parseDate(a.publishedAt || a.fecha);
-      var tb = parseDate(b.publishedAt || b.fecha);
-      
-      // Si las fechas son iguales, ordenar por año y número de serie correlativo
-      if(ta === tb){
-        var yearA = parseInt(a.id.year) || 0;
-        var yearB = parseInt(b.id.year) || 0;
-        
-        // Primero comparar por año (mayor primero)
-        if(yearA !== yearB) return yearB - yearA;
-        
-        // Si año igual, comparar por número (mayor primero)
-        var numA = parseInt(a.id.num) || 0;
-        var numB = parseInt(b.id.num) || 0;
-        return numB - numA;
-      }
-      
-      return tb - ta; // descendente: más reciente primero
-    } else {
-      // Por vencimiento (por defecto)
-      var ta = a.perm ? Infinity : (a.expTs || 9e13);
-      var tb = b.perm ? Infinity : (b.expTs || 9e13);
-      return ta - tb;
-    }
+    var ta = a.perm ? Infinity : (a.expTs || 9e13);
+    var tb = b.perm ? Infinity : (b.expTs || 9e13);
+    return ta - tb;
   });
-}
-
-// Toggle modo de ordenación
-function toggleSort(){
-  sortMode = sortMode === 'expiration' ? 'publication' : 'expiration';
-  sortNotams();
-  guardar();
-  renderizar();
-  updateSortBadge();
-}
-
-function updateSortBadge(){
-  var badge = document.getElementById('sortBadge');
-  if(badge){
-    if(sortMode === 'publication'){
-      badge.textContent = 'Ordenado por Publicación';
-      badge.style.background = '#2563eb';
-    } else {
-      badge.textContent = 'Ordenado por Vencimiento';
-      badge.style.background = '#e03050';
-    }
-  }
 }
 
 // Tipo de NOTAM: NOTAMN / NOTAMR ref / NOTAMC
@@ -1685,10 +1603,7 @@ function card(n, idx, terminos){
   /* badge estado (ACTIVO/URGENTE por defecto) */
   var stBdg = '<span class="bdg b-act" id="stbdg-'+idx+'">ACTIVO</span>';
 
-  /* badge fecha de publicación */
-  var pubBdg = n.publishedAt
-    ? '<span class="bdg-pub">📅 '+esc(n.publishedAt.trim())+'</span>'
-    : (n.fecha ? '<span class="bdg-pub">📅 '+esc(n.fecha.trim())+'</span>' : '');
+  /* badge fecha de publicación - ELIMINADO */
 
   /* tipo NOTAM (pequeño, arriba del raw) */
   var tipoHtml='';
@@ -1734,15 +1649,8 @@ function card(n, idx, terminos){
   btnsHtml+='<button class="btn btn-del" onclick="eliminar('+idx+')">Eliminar</button>';
   btnsHtml+='</div>';
 
-  /* pie emisión */
+  /* pie emisión - ELIMINADO */
   var emitHtml='';
-  if(n.publishedAt){
-    // Show real publication date from scraper
-    emitHtml='<div class="emit-foot">📅 Publicado: <b>'+esc(n.publishedAt.trim())+'</b></div>';
-  } else if(n.fecha){
-    // Fallback to fecha (from B field)
-    emitHtml='<div class="emit-foot">📅 Publicado: <b>'+esc(n.fecha.trim())+'</b></div>';
-  }
 
   /* ── aeródromo HTML con nombre completo ── */
   var aeroHtml = aeroDisplayHtml(n.a, n.aero);
@@ -1755,7 +1663,7 @@ function card(n, idx, terminos){
     /* ── cabecera: ID + badges ── */
     +'<div class="c-head">'
     +  '<span class="c-id">'+esc(n.id.disp)+'</span>'
-    +  '<div class="c-badges">'+stBdg+' '+sBdg+' '+aBdg+' '+pubBdg+'</div>'
+    +  '<div class="c-badges">'+stBdg+' '+sBdg+' '+aBdg+'</div>'
     +'</div>'
     /* ── aeródromo + tipo + FIR/Q ── */
     +'<div class="aero-strip">'
@@ -1782,23 +1690,14 @@ function card(n, idx, terminos){
 ══════════════════════════════════════════════ */
 function setFiltro(tipo){
   filtroActual = tipo;
-  ['fbTodos','fbEst','fbSino','fbPerm','fbUltPub'].forEach(function(id){
+  ['fbTodos','fbEst','fbSino','fbPerm'].forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.classList.remove('active');
   });
-  var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm', ultpub:'fbUltPub'};
+  var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm'};
   var el = document.getElementById(map[tipo]);
   if(el) el.classList.add('active');
-  
-  // Si selecciona "Último Publicado", activar modo de orden por publicación
-  if(tipo === 'ultpub'){
-    sortMode = 'publication';
-  } else {
-    sortMode = 'expiration';
-  }
-  sortNotams();
   renderizar();
-  updateSortBadge();
 }
 
 function aplicarBusqueda(){
@@ -1938,7 +1837,6 @@ function notamVisible(n){
   if(filtroActual==='est')  { if(!n.alarma || n.perm) return false; }
   if(filtroActual==='sino') { if(n.alarma  || n.perm) return false; }
   if(filtroActual==='perm') { if(!n.perm) return false; }
-  /* ultpub muestra todos, solo cambia el orden */
 
   /* Filtro por número de NOTAM (acepta: A0864/26, 0864/26, 0864, etc.) */
   if(filtroNumero.length >= 2){
@@ -2436,20 +2334,9 @@ function procesarCorpacItems(items){
     var eMatch = rawText.match(/E\)\s*([\s\S]+?)(?=\s*[A-G]\)|$)/i);
     var desc = eMatch ? eMatch[1].trim() : '';
     
-    // Use published_at from API if available, otherwise parse from B field
-    var publishedAt = item.published_at || null;
-    var fechaTs = publishedAt ? new Date(publishedAt.replace(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6')).getTime() : bTs;
-    var fecha = publishedAt 
-      ? publishedAt  // Already in DD/MM/YYYY HH:MM:SS format from scraper
-      : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null);
-    
-    // Format publishedAt for display (already in correct format from scraper)
-    var publishedAtDisplay = publishedAt || null;
-    
-    // Debug: log if published_at is missing
-    if(!publishedAt && item.id) {
-      console.log('Missing published_at for NOTAM:', item.id);
-    }
+    // Use B field for fecha display
+    var fechaTs = bTs;
+    var fecha = bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null;
     
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'
@@ -2478,7 +2365,6 @@ function procesarCorpacItems(items){
       aero: { cod: item.location || '', nom: FIR_SPIM[item.location] || '' },
       fecha: fecha,
       fechaTs: fechaTs,
-      publishedAt: publishedAtDisplay,
       tipo: null,
       expTs: expTs,
       perm: cf ? cf.perm : false,

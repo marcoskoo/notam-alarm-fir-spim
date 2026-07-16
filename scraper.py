@@ -71,18 +71,6 @@ with sync_playwright() as p:
             
             if (!notamId) return;
             
-            // Extract publication date from the HTML table row (NOT from mailto body)
-            // The date DD/MM/YYYY HH:MM:SS is in a table cell near the mailto link
-            var publishedAt = '';
-            var tableRow = link.closest('tr');
-            if (tableRow) {
-                var allText = tableRow.textContent;
-                var dateMatch = allText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
-                if (dateMatch) {
-                    publishedAt = dateMatch[1];
-                }
-            }
-            
             // Get remaining lines after NOTAM ID
             var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
             
@@ -119,7 +107,6 @@ with sync_playwright() as p:
                 id: notamId,
                 type: type,
                 location: location,
-                published_at: publishedAt,
                 raw_text: body.replace(/\\n/g, '\\r\\n'),
                 q_line: qLine,
                 details: details.replace(/\\n/g, '\\r\\n')

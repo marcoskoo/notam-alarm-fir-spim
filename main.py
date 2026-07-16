@@ -28,7 +28,6 @@ class NotamItem(BaseModel):
     series: Optional[str] = ""
     fir: str = "SPIM"
     location: Optional[str] = ""
-    published_at: Optional[str] = None
     effective_from: Optional[str] = None
     effective_until: Optional[str] = None
     schedule: Optional[str] = None
@@ -121,7 +120,6 @@ def get_notam_data() -> dict:
                     eff_from = None
                     eff_until = None
                     schedule = None
-                    published_at = None
                     
                     b_match = re.search(r'B\)\s*(\d{10})', details)
                     if b_match:
@@ -138,30 +136,12 @@ def get_notam_data() -> dict:
                     e_match = re.search(r'E\)\s*(.+?)(?:\s*F\)|$)', details, re.DOTALL)
                     description = e_match.group(1).strip() if e_match else details
                     
-                    # Extract publication date from CREATED field
-                    pub_match = re.search(r'(\d{6})\s*(\d{4})\s*CREATED', details)
-                    if pub_match:
-                        dd = pub_match.group(1)[:2]
-                        mo = pub_match.group(1)[2:4]
-                        yy = pub_match.group(1)[4:6]
-                        hh = pub_match.group(2)[:2]
-                        mm = pub_match.group(2)[2:4]
-                        published_at = f"20{yy}-{mo}-{dd}T{hh}:{mm}:00"
-                    
-                    # Use published_at from scraper if available (real publication date)
-                    # The scraper extracts it from the HTML table row on the page
-                    if n.get("published_at") and n["published_at"].strip():
-                        published_at = n["published_at"].strip()
-                    else:
-                        published_at = None
-                    
                     notams.append({
                         "id": n["id"],
                         "type": n.get("type", ""),
                         "series": "A" if n["id"][0] == "A" else "C",
                         "fir": "SPIM",
                         "location": n.get("location", ""),
-                        "published_at": published_at,
                         "effective_from": eff_from,
                         "effective_until": eff_until,
                         "schedule": schedule,
@@ -210,9 +190,7 @@ async def root():
     return {"api": "NOTAM FIR SPIM API", "version": "2.0.0", "note": "HTML app not found"}
 
 @app.get("/notams", response_model=NotamResponse)
-async def get_all_notams(
-    sort: Optional[str] = Query(None, description="Ordenar: 'latest' (más reciente primero), 'oldest' (más antiguo primero)")
-):
+async def get_all_notams():
     """Get all NOTAMs for FIR SPIM"""
     data = get_notam_data()
     
@@ -220,10 +198,6 @@ async def get_all_notams(
         raise HTTPException(status_code=404, detail="No NOTAMs found")
     
     notams = data["notams"]
-    if sort == "latest":
-        notams = sorted(notams, key=lambda x: x.get("published_at") or "0000", reverse=True)
-    elif sort == "oldest":
-        notams = sorted(notams, key=lambda x: x.get("published_at") or "9999")
     
     return NotamResponse(
         fir=data["fir"],
@@ -231,28 +205,6 @@ async def get_all_notams(
         last_updated=data.get("extraction_date", "Unknown"),
         source=data.get("source", "CORPAC S.A."),
         notams=[NotamItem(**n) for n in notams]
-    )
-
-@app.get("/notams/latest", response_model=NotamResponse)
-async def get_latest_notams(limit: int = Query(10, ge=1, le=100)):
-    """Get latest NOTAMs by publication date"""
-    data = get_notam_data()
-    
-    if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    sorted_notams = sorted(
-        data["notams"], 
-        key=lambda x: x.get("published_at") or "0000", 
-        reverse=True
-    )[:limit]
-    
-    return NotamResponse(
-        fir=data["fir"],
-        total_count=len(sorted_notams),
-        last_updated=data.get("extraction_date", "Unknown"),
-        source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**n) for n in sorted_notams]
     )
 
 @app.get("/notams/raw")
