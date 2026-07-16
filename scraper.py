@@ -5,7 +5,8 @@ import re
 import os
 from urllib.parse import unquote, parse_qs
 
-output_dir = "C:\\Users\\aissphi\\AppData\\Local\\Temp\\notam_api"
+output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+os.makedirs(output_dir, exist_ok=True)
 URL_DISTRIBUCION = 'https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action='
 
 with sync_playwright() as p:
