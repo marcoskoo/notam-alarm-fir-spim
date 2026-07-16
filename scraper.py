@@ -72,14 +72,26 @@ with sync_playwright() as p:
             
             if (!notamId) return;
             
-            // Extract publication date from the HTML table row
+            // Get expand link for location (needed for pub date lookup)
+            var parent = link.closest('table');
+            var expandLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
+            var location = '';
+            if (expandLink) {
+                var ocultarHref = expandLink.getAttribute('href');
+                var locMatch = ocultarHref.match(/ocultarMensaje\\('([A-Z]{3,4})/);
+                if (locMatch) location = locMatch[1];
+            }
+            
+            // Extract publication date: sibling TR has <td id="{location}{notamId}-1"> with "Recibido el: DD/MM/YYYY HH:MM:SS"
             var pubDate = '';
-            var tableRow = link.closest('tr');
-            if (tableRow) {
-                var allText = tableRow.textContent;
-                var dateMatch = allText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
-                if (dateMatch) {
-                    pubDate = dateMatch[1];
+            if (location && notamId) {
+                var dateEl = document.getElementById(location + notamId + '-1');
+                if (dateEl) {
+                    var dateText = dateEl.textContent;
+                    var dateMatch = dateText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                    if (dateMatch) {
+                        pubDate = dateMatch[1];
+                    }
                 }
             }
             
@@ -100,16 +112,6 @@ with sync_playwright() as p:
             }
             var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
             var details = detailMatches ? detailMatches[0].trim() : '';
-            
-            // Get expand link for location
-            var parent = link.closest('table');
-            var expandLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
-            var location = '';
-            if (expandLink) {
-                var ocultarHref = expandLink.getAttribute('href');
-                var locMatch = ocultarHref.match(/ocultarMensaje\\('([A-Z]{3,4})/);
-                if (locMatch) location = locMatch[1];
-            }
             
             // Type
             var typeMatch = lines[notamStartIdx].match(/(NOTAM[NRC])/);
@@ -133,8 +135,33 @@ with sync_playwright() as p:
     # Debug: print first 3
     for n in notams[:3]:
         print(f"\n  [{n['id']}] {n['type']}")
+        print(f"  raw_text first 80: {repr(n['raw_text'][:80])}")
         print(f"  Q: {n['q_line']}")
         print(f"  Details: {n['details'][:300]}")
+    
+    # Debug: check what the page sees for pubDate
+    debug_dates = page.evaluate('''() => {
+        var links = document.querySelectorAll('a[href^="mailto:"]');
+        var results = [];
+        for (var i = 0; i < Math.min(3, links.length); i++) {
+            var link = links[i];
+            var tableRow = link.closest('tr');
+            var parentTable = link.closest('table');
+            var nearestTr = link.parentElement;
+            var info = {
+                trFound: !!tableRow,
+                tableFound: !!parentTable,
+                nearestTag: nearestTr ? nearestTr.tagName : 'none',
+                tableRowText: tableRow ? tableRow.textContent.substring(0, 200) : 'N/A',
+                parentHTML: parentTable ? parentTable.innerHTML.substring(0, 500) : 'N/A'
+            };
+            results.push(info);
+        }
+        return results;
+    }''')
+    for i, dd in enumerate(debug_dates):
+        print(f"\n  Debug link {i}: trFound={dd['trFound']}, nearestTag={dd['nearestTag']}")
+        print(f"    tableRowText: {dd['tableRowText'][:200]}")
     
     result_data = {
         "territory": "PERU",
