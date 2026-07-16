@@ -559,6 +559,11 @@ textarea::placeholder { color:#a0aab8; }
 .filter-btn.f-perm:hover { border-color:#0ea5e9; background:#f0f9ff; }
 .filter-btn.f-perm.active { background:linear-gradient(135deg,#0369a1,#0ea5e9); color:#fff; border-color:#0369a1; box-shadow:0 2px 8px rgba(14,165,233,.35); }
 
+/* ÚLTIMO EMITIDO — ámbar/naranja */
+.filter-btn.f-emitido { border-color:#fbbf24; color:#92400e; }
+.filter-btn.f-emitido:hover { border-color:#f59e0b; background:#fffbeb; }
+.filter-btn.f-emitido.active { background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; border-color:#d97706; box-shadow:0 2px 8px rgba(245,158,11,.35); }
+
 /* ── Search filter inputs ── */
 .filter-search-row {
   display:flex; align-items:center; gap:7px; flex-wrap:wrap;
@@ -899,6 +904,17 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
           PERM
         </button>
 
+        <span style="width:1px;height:22px;background:#d0d8f0;margin:0 2px;"></span>
+
+        <!-- ÚLTIMO EMITIDO -->
+        <button class="filter-btn f-emitido" id="fbEmitido" onclick="toggleSortEmitido()">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M8 4.5V8.5L10.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Último Emitido
+        </button>
+
       </div>
       <!-- Búsqueda por aeródromo y código Q -->
       <div class="filter-search-row">
@@ -980,6 +996,7 @@ var alarmas = {};       // idx → intervalId
 var alarmaON = {};      // idx → bool
 var actx = null;
 var filtroActual = 'todos';   // 'todos' | 'est' | 'sino' | 'perm'
+var sortMode = 'default';    // 'default' | 'emitido'
 
 /* ══════════════════════════════════════════════
    PERSISTENCIA
@@ -1198,11 +1215,25 @@ function fechaToTs(fechaStr){
 
 // Ordenar notams según el modo actual
 function sortNotams(){
-  notams.sort(function(a,b){
-    var ta = a.perm ? Infinity : (a.expTs || 9e13);
-    var tb = b.perm ? Infinity : (b.expTs || 9e13);
-    return ta - tb;
-  });
+  if(sortMode === 'emitido'){
+    // Último emitido primero: por fecha de publicación (desc), luego por nro correlativo (desc)
+    notams.sort(function(a,b){
+      var pa = a.publishedTs || 0;
+      var pb = b.publishedTs || 0;
+      if(pa !== pb) return pb - pa;  // newest pub date first
+      // Tie-breaker: highest correlation number first
+      var na = parseInt(a.id.num) || 0;
+      var nb = parseInt(b.id.num) || 0;
+      return nb - na;
+    });
+  } else {
+    // Default: por fecha de expiración (asc) — expiring soonest first
+    notams.sort(function(a,b){
+      var ta = a.perm ? Infinity : (a.expTs || 9e13);
+      var tb = b.perm ? Infinity : (b.expTs || 9e13);
+      return ta - tb;
+    });
+  }
 }
 
 // Tipo de NOTAM: NOTAMN / NOTAMR ref / NOTAMC
@@ -1341,6 +1372,7 @@ function parsearCORPAC(txt){
         fechaTs: bTs,
         publishedAt: bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null,
         tipo:   null,
+        publishedTs: null,
         expTs:  expTs,
         perm:   cf ? cf.perm : false,
         alarma: cf ? (!cf.perm && cf.est) : false,
@@ -1443,10 +1475,11 @@ function construir(txt){
   var aero=pAero(txt), fecha=pFecha(txt), tipo=pTipo(txt);
   var expTs=(cf&&!cf.perm&&cf.ts)?cf.ts:null;
   var fechaTs=fechaToTs(fecha);
+  var publishedTs = fechaTs; // For manually entered NOTAMs, use B field date as fallback
   var rawVis = rawParaMostrar(txt);   // texto limpio para mostrar en tarjeta
   return {
     id:id, raw:txt, rawVis:rawVis, c:cf, b:bf, a:af, q:qf, e:ef,
-    aero:aero, fecha:fecha, fechaTs:fechaTs, publishedAt:fecha, tipo:tipo, expTs:expTs,
+    aero:aero, fecha:fecha, fechaTs:fechaTs, publishedTs:publishedTs, publishedAt:fecha, tipo:tipo, expTs:expTs,
     perm:cf?cf.perm:false,
     alarma:cf?(!cf.perm&&cf.est):false,
     silenciado:false
@@ -1719,6 +1752,19 @@ function setFiltro(tipo){
   var map = {todos:'fbTodos', est:'fbEst', sino:'fbSino', perm:'fbPerm'};
   var el = document.getElementById(map[tipo]);
   if(el) el.classList.add('active');
+  renderizar();
+}
+
+function toggleSortEmitido(){
+  var btn = document.getElementById('fbEmitido');
+  if(sortMode === 'emitido'){
+    sortMode = 'default';
+    if(btn) btn.classList.remove('active');
+  } else {
+    sortMode = 'emitido';
+    if(btn) btn.classList.add('active');
+  }
+  sortNotams();
   renderizar();
 }
 
@@ -2359,6 +2405,17 @@ function procesarCorpacItems(items){
     // Use B field for fecha display
     var fechaTs = bTs;
     var fecha = bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null;
+
+    // Extract publication date from raw_text first line: "DD/MM/YYYY HH:MM:SS\n..."
+    var publishedTs = null;
+    var publishedAt = null;
+    var firstLine = (rawText.split(/\r?\n/)[0] || '').trim();
+    var pubMatch = firstLine.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    if(pubMatch){
+      publishedAt = pubMatch[1]+'/'+pubMatch[2]+'/'+pubMatch[3]+'  '+pubMatch[4]+':'+pubMatch[5]+':'+pubMatch[6]+' UTC';
+      publishedTs = Date.UTC(parseInt(pubMatch[3]), parseInt(pubMatch[2])-1, parseInt(pubMatch[1]),
+                             parseInt(pubMatch[4]), parseInt(pubMatch[5]), parseInt(pubMatch[6]));
+    }
     
     // Use raw_text directly — preserve original format from CORPAC
     var rawVis = rawText || (id + '/' + year + ' NOTAMN\n'
@@ -2388,6 +2445,8 @@ function procesarCorpacItems(items){
       fecha: fecha,
       fechaTs: fechaTs,
       tipo: null,
+      publishedTs: publishedTs,
+      publishedAt: publishedAt,
       expTs: expTs,
       perm: cf ? cf.perm : false,
       alarma: cf ? (!cf.perm && cf.est) : false,
