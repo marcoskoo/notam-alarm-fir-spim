@@ -71,6 +71,17 @@ with sync_playwright() as p:
             
             if (!notamId) return;
             
+            // Extract publication date from the HTML table row
+            var pubDate = '';
+            var tableRow = link.closest('tr');
+            if (tableRow) {
+                var allText = tableRow.textContent;
+                var dateMatch = allText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                if (dateMatch) {
+                    pubDate = dateMatch[1];
+                }
+            }
+            
             // Get remaining lines after NOTAM ID
             var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
             
@@ -107,7 +118,7 @@ with sync_playwright() as p:
                 id: notamId,
                 type: type,
                 location: location,
-                raw_text: body.replace(/\\n/g, '\\r\\n'),
+                raw_text: (pubDate ? pubDate + '\\n' : '') + body.replace(/\\n/g, '\\r\\n'),
                 q_line: qLine,
                 details: details.replace(/\\n/g, '\\r\\n')
             });

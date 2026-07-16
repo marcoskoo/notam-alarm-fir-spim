@@ -2357,13 +2357,13 @@ function procesarCorpacItems(items){
     var fechaTs = bTs;
     var fecha = bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null;
     
-    // Build display text
-    var rawVis = id + '/' + year + ' NOTAMN\n'
+    // Use raw_text directly — preserve original format from CORPAC
+    var rawVis = rawText || (id + '/' + year + ' NOTAMN\n'
       + (item.location ? 'A) ' + item.location + '\n' : '')
       + 'B) ' + (bMatch ? bMatch[1] : 'UNKNOWN') + '\n'
       + 'C) ' + (cPerm ? 'PERM' : (cMatch ? cMatch[1] + (cEst ? ' EST' : '') : 'UNKNOWN')) + '\n'
       + (dMatch ? 'D) ' + dMatch[1] + '\n' : '')
-      + 'E) ' + desc;
+      + 'E) ' + desc);
     
     notams.push({
       id: {
