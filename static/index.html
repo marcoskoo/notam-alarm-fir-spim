@@ -1214,7 +1214,7 @@ function sortNotams(){
         // Extraer número del NOTAM (ej: A0001/25 → 1, C0123/26 → 123)
         var numA = parseInt(a.id.num) || 0;
         var numB = parseInt(b.id.num) || 0;
-        return numA - numB; // ascendente: primero el de menor número
+        return numB - numA; // descendente: primero el de mayor número
       }
       
       return tb - ta; // descendente: más reciente primero
