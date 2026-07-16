@@ -1358,9 +1358,9 @@ function parsearCORPAC(txt){
         q:      null,
         e:      desc,
         aero:   { cod: aeroActual.icao, nom: FIR_SPIM[aeroActual.icao]||aeroActual.nombre },
-        fecha:  bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null,
+        fecha:  bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null,
         fechaTs: bTs,
-        publishedAt: bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null,
+        publishedAt: bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null,
         tipo:   null,
         expTs:  expTs,
         perm:   cf ? cf.perm : false,
@@ -2392,7 +2392,7 @@ function procesarCorpacItems(items){
     var fechaTs = publishedAt ? new Date(publishedAt).getTime() : bTs;
     var fecha = publishedAt 
       ? publishedAt.replace('T', ' ').replace(':00', '') + ' UTC'
-      : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,8)+'  '+bMatch[1].slice(8,10)+':'+bMatch[1].slice(10,12)+' UTC' : null);
+      : (bMatch ? bMatch[1].slice(0,2)+'/'+bMatch[1].slice(2,4)+'/'+bMatch[1].slice(4,6)+'  '+bMatch[1].slice(6,8)+':'+bMatch[1].slice(8,10)+' UTC' : null);
     
     // Build display text
     var rawVis = id + '/' + year + ' NOTAMN\n'

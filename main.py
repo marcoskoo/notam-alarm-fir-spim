@@ -147,6 +147,10 @@ def get_notam_data() -> dict:
                         hh = pub_match.group(2)[:2]
                         mm = pub_match.group(2)[2:4]
                         published_at = f"20{yy}-{mo}-{dd}T{hh}:{mm}:00"
+                    elif b_match:
+                        # Use B) field as publication date (DDMMYYHHMM format)
+                        b = b_match.group(1)
+                        published_at = f"20{b[4:6]}-{b[2:4]}-{b[0:2]}T{b[6:8]}:{b[8:10]}:00"
                     
                     notams.append({
                         "id": n["id"],
