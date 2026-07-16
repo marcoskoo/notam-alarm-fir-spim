@@ -132,36 +132,10 @@ with sync_playwright() as p:
     
     print(f"   NOTAMs: {len(notams)}")
     
-    # Debug: print first 3
+    # Print first 3 for verification
     for n in notams[:3]:
         print(f"\n  [{n['id']}] {n['type']}")
-        print(f"  raw_text first 80: {repr(n['raw_text'][:80])}")
-        print(f"  Q: {n['q_line']}")
-        print(f"  Details: {n['details'][:300]}")
-    
-    # Debug: check what the page sees for pubDate
-    debug_dates = page.evaluate('''() => {
-        var links = document.querySelectorAll('a[href^="mailto:"]');
-        var results = [];
-        for (var i = 0; i < Math.min(3, links.length); i++) {
-            var link = links[i];
-            var tableRow = link.closest('tr');
-            var parentTable = link.closest('table');
-            var nearestTr = link.parentElement;
-            var info = {
-                trFound: !!tableRow,
-                tableFound: !!parentTable,
-                nearestTag: nearestTr ? nearestTr.tagName : 'none',
-                tableRowText: tableRow ? tableRow.textContent.substring(0, 200) : 'N/A',
-                parentHTML: parentTable ? parentTable.innerHTML.substring(0, 500) : 'N/A'
-            };
-            results.push(info);
-        }
-        return results;
-    }''')
-    for i, dd in enumerate(debug_dates):
-        print(f"\n  Debug link {i}: trFound={dd['trFound']}, nearestTag={dd['nearestTag']}")
-        print(f"    tableRowText: {dd['tableRowText'][:200]}")
+        print(f"  raw_text: {n['raw_text'][:100]}")
     
     result_data = {
         "territory": "PERU",
