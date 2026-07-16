@@ -1,0 +1,141 @@
+from playwright.sync_api import sync_playwright
+import time
+import json
+import re
+import os
+from urllib.parse import unquote, parse_qs
+
+output_dir = "C:\\Users\\aissphi\\AppData\\Local\\Temp\\notam_api"
+URL_DISTRIBUCION = 'https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action='
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=False, slow_mo=200)
+    page = browser.new_page(viewport={'width': 1280, 'height': 900})
+    
+    print("1. Login...")
+    page.goto('https://appoperacional.corpac.gob.pe/NOTAM/newlog.php', timeout=60000)
+    time.sleep(3)
+    page.fill('#txtusu', 'aissphi')
+    page.fill('#txtpass', 'corpac')
+    page.click('#action')
+    time.sleep(5)
+    
+    print("2. NOTAM Distribucion...")
+    page.goto(URL_DISTRIBUCION, timeout=60000)
+    time.sleep(6)
+    
+    print("3. Buscar...")
+    page.evaluate('''() => {
+        var form = document.forms['frmConsultas'];
+        form.elements['txtcodpais'].value = 'SP';
+        form.elements['slSerie'].value = '';
+        form.elements['txtcodaero'].value = '';
+        form.elements['txtfir'].value = 'SPIM';
+        var radios = document.querySelectorAll('input[name="rdVer"]');
+        radios.forEach(function(r) { r.checked = (r.value === 'V'); });
+        form.elements['rdTemp'].value = 'V';
+    }''')
+    page.click('input[name="action"][value="Buscar"]')
+    time.sleep(15)
+    
+    print("4. Extrayendo NOTAMs...")
+    notams = page.evaluate('''() => {
+        var results = [];
+        var links = document.querySelectorAll('a[href^="mailto:"]');
+        
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            
+            // Extract body - everything after body=
+            var bodyIdx = href.indexOf('body=');
+            if (bodyIdx < 0) return;
+            var bodyRaw = href.substring(bodyIdx + 5);
+            var body = decodeURIComponent(bodyRaw);
+            
+            // Split by newlines
+            var lines = body.split('\\n');
+            
+            // First line: NOTAM ID and type
+            var firstLine = (lines[0] || '').trim();
+            var notamId = firstLine.split(' ')[0] || '';
+            
+            // Get remaining lines (Q through E)
+            var remaining = lines.slice(1).join('\\n').trim();
+            
+            // Extract Q line
+            var qMatch = remaining.match(/Q\\)\\s*(.+)/);
+            var qLine = qMatch ? qMatch[1].trim() : '';
+            
+            // Extract detail lines (A through E)
+            var detailLines = [];
+            var remaining2 = remaining;
+            if (qLine) {
+                var qEndIdx = remaining2.indexOf('Q)');
+                if (qEndIdx >= 0) {
+                    remaining2 = remaining2.substring(qEndIdx + qLine.length + 3);
+                }
+            }
+            var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
+            var details = detailMatches ? detailMatches[0].trim() : '';
+            
+            // Get expand link for location
+            var parent = link.closest('table');
+            var expandLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
+            var location = '';
+            if (expandLink) {
+                var ocultarHref = expandLink.getAttribute('href');
+                var locMatch = ocultarHref.match(/ocultarMensaje\\('([A-Z]{3,4})/);
+                if (locMatch) location = locMatch[1];
+            }
+            
+            // Type
+            var typeMatch = firstLine.match(/(NOTAM[NRC])/);
+            var type = typeMatch ? typeMatch[1] : '';
+            
+            results.push({
+                id: notamId,
+                type: type,
+                location: location,
+                raw_text: body.replace(/\\n/g, '\\r\\n'),
+                q_line: qLine,
+                details: details.replace(/\\n/g, '\\r\\n')
+            });
+        });
+        
+        return results;
+    }''')
+    
+    print(f"   NOTAMs: {len(notams)}")
+    
+    # Debug: print first 3
+    for n in notams[:3]:
+        print(f"\n  [{n['id']}] {n['type']}")
+        print(f"  Q: {n['q_line']}")
+        print(f"  Details: {n['details'][:300]}")
+    
+    result_data = {
+        "territory": "PERU",
+        "fir": "SPIM",
+        "total_count": len(notams),
+        "serie_a_count": sum(1 for n in notams if n['id'][0] == 'A'),
+        "serie_c_count": sum(1 for n in notams if n['id'][0] == 'C'),
+        "notam_n_count": sum(1 for n in notams if n['type'] == 'NOTAMN'),
+        "notam_r_count": sum(1 for n in notams if n['type'] == 'NOTAMR'),
+        "source": "CORPAC S.A.",
+        "source_url": URL_DISTRIBUCION,
+        "extraction_date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "search_path": "Modulos/NOTAM/CONSULTAS/NOTAM Distribucion",
+        "search_params": {
+            "pais": "PERU", "serie": "Todas", "aerodromo": "Todos",
+            "fir": "SPIM", "ver": "Vigentes"
+        },
+        "notams": notams
+    }
+    
+    with open(os.path.join(output_dir, 'notam_peru_final.json'), 'w', encoding='utf-8') as f:
+        json.dump(result_data, f, indent=2, ensure_ascii=False)
+    with open(os.path.join(output_dir, 'notam_cache.json'), 'w', encoding='utf-8') as f:
+        json.dump(result_data, f, indent=2, ensure_ascii=False)
+    
+    browser.close()
+    print("\nListo!")

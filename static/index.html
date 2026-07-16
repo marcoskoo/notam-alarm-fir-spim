@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOTAM ALARM — FIR SPIM</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#a8afd8;min-height:100vh}
+.header{background:linear-gradient(180deg,#1c2e4a,#22395c);padding:18px 30px 14px;text-align:center;position:sticky;top:0;z-index:200}
+.header h1{color:#fff;font-size:1.45rem;font-weight:800}
+.header p{color:#a8c0d8;font-size:.8rem;margin-top:4px}
+.save-ind{position:absolute;top:10px;right:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.7rem;color:#cce0f5;display:flex;align-items:center;gap:5px}
+.save-dot{width:7px;height:7px;border-radius:50%;background:#4de89c;animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.utc-bar{background:#12202e;padding:5px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;position:sticky;top:62px;z-index:199}
+.utc-lbl{color:#5a8aaa;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
+.utc-val{color:#4de89c;font-family:'Courier New',monospace;font-size:.9rem;font-weight:700}
+.wrap{max-width:1400px;margin:0 auto;padding:16px 16px 30px}
+.cols{display:grid;grid-template-columns:390px 1fr;gap:16px;align-items:start}
+:root{--h-main:110px;--h-bph:46px;--h-fbar:54px;--h-fsearch:52px;--h-sticky:calc(var(--h-main)+var(--h-bph)+var(--h-fbar)+var(--h-fsearch))}
+.left-sticky-col{position:sticky;top:var(--h-main);align-self:start}
+.ph{position:sticky;top:var(--h-main);z-index:90;border-radius:10px 10px 0 0}
+.right-panel{display:flex;flex-direction:column;height:calc(100vh - var(--h-main) - 32px);position:sticky;top:var(--h-main);align-self:start}
+.board-ph{position:sticky;top:0;z-index:92;background:#f6f8fc;border-radius:10px 10px 0 0;flex-shrink:0}
+.filter-bar{position:sticky;top:var(--h-bph);z-index:91;background:#f4f7fc;flex-shrink:0}
+.filter-search-row{position:sticky;top:calc(var(--h-bph)+var(--h-fbar));z-index:90;background:#f8fafc;flex-shrink:0}
+.board-body{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.panel{background:#fff;border-radius:10px;box-shadow:0 3px 14px rgba(0,0,0,.12)}
+.ph{padding:11px 15px 10px;display:flex;align-items:center;gap:8px;border-bottom:2px solid #e0e8f4;border-radius:10px 10px 0 0;background:#f6f8fc}
+.ph h2{font-size:.93rem;font-weight:700;color:#1c2e4a}
+.ph-icon{font-size:1.1rem}
+.left-body{padding:14px 15px}
+textarea{width:100%;height:200px;border:1px solid #c8d0e0;border-radius:6px;padding:9px 11px;font-family:'Courier New',monospace;font-size:.73rem;color:#2a3a4a;background:#fafbfd;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}
+textarea:focus{border-color:#4a7fc0}
+textarea::placeholder{color:#a0aab8}
+.btn-row{display:flex;gap:8px;margin-top:9px}
+.btn{flex:1;padding:10px 8px;border:none;border-radius:7px;font-size:.86rem;font-weight:700;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn-proc{background:#1c2e4a;color:#fff}
+.btn-clr{background:#e03050;color:#fff}
+.ibox{border-radius:6px;padding:9px 11px;margin-top:8px;font-size:.75rem;line-height:1.6}
+.ibox b{font-weight:700}
+.ibox .title{font-weight:700;margin-bottom:2px}
+.ib-p{background:#f0eafd;border:1px solid #c0a0e8;color:#3a1a6a}
+.ib-g{background:#e8fdf0;border:1px solid #a0e8bc;color:#1a5a30}
+.ib-o{background:#fff8e8;border:1px solid #f0d080;color:#5a3a00}
+.tag{display:inline-block;padding:1px 5px;border-radius:3px;font-weight:700;font-size:.72rem}
+.tg{background:#4de89c;color:#003820}
+.ty{background:#f0b429;color:#3a2000}
+.tp{background:#8a70c8;color:#fff}
+.board-ph{padding:11px 15px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #e0e8f4;border-radius:10px 10px 0 0;background:#f6f8fc}
+.board-ph-left{display:flex;align-items:center;gap:8px}
+.board-ph-left h2{font-size:.93rem;font-weight:700;color:#1c2e4a}
+.sort-badge{background:#e03050;color:#fff;font-size:.66rem;font-weight:700;padding:4px 10px;border-radius:20px}
+.board-count{font-size:.72rem;color:#7a8a9a}
+.board-body{padding:12px;display:flex;flex-direction:column;gap:12px}
+.empty-s{text-align:center;padding:50px 20px;color:#9aa0b0}
+.hl-match{background:#16a34a;color:#fff;border-radius:3px;padding:0 2px;font-weight:700}
+.nav-arrows{display:none;align-items:center;gap:4px;margin-left:auto}
+.nav-arrows.visible{display:flex}
+.nav-btn{width:28px;height:28px;border:1.5px solid #c8d4f0;border-radius:6px;background:#fff;color:#1c2e4a;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none}
+.nav-btn:hover{background:#1c2e4a;color:#fff;border-color:#1c2e4a}
+.nav-btn:disabled{opacity:.35;cursor:default}
+.nav-pos{font-size:.7rem;color:#64748b;font-weight:700;min-width:40px;text-align:center}
+.ncard.nav-focus{outline:3px solid #2563eb;outline-offset:1px}
+.empty-s .ei{font-size:2.6rem;margin-bottom:10px;opacity:.3}
+.empty-s p{font-size:.83rem;line-height:1.7}
+.ncard{background:#fff;border:1px solid #e2e8f0;border-left:5px solid #7c3aed;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.08);margin-bottom:0}
+.ncard.serie-C{border-left-color:#d97706}
+.ncard.expired{border-left-color:#94a3b8;opacity:.72}
+.ncard.ringing{border-left-color:#e03050!important;box-shadow:0 0 0 3px rgba(224,48,80,.22)!important;animation:rpulse 1s ease-in-out infinite}
+@keyframes rpulse{0%,100%{box-shadow:0 0 0 2px rgba(224,48,80,.18)}50%{box-shadow:0 0 0 5px rgba(224,48,80,.4)}}
+.c-head{padding:10px 12px 9px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.c-id{font-size:1.1rem;font-weight:800;color:#1e293b;letter-spacing:.02em}
+.c-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bdg{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;letter-spacing:.03em}
+.b-int{color:#2563eb;background:transparent;padding:4px 2px;font-size:.76rem}
+.b-nac{color:#d97706;background:transparent;padding:4px 2px;font-size:.76rem}
+.b-mas-urg{background:#ef4444;color:#fff}
+.b-urg{background:#f97316;color:#fff}
+.b-prox{background:#1c2e4a;color:#fff}
+.b-act{background:#22c55e;color:#fff}
+.b-exp{background:#94a3b8;color:#fff}
+.b-est{background:#10b981;color:#fff}
+.b-sino{background:#7c3aed;color:#fff}
+.b-perm{background:#7c3aed;color:#fff}
+.bdg-tipo{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700}
+.bdg-tipo-n{background:#dbeafe;color:#1d4ed8}
+.bdg-tipo-r{background:#fef3c7;color:#92400e}
+.bdg-tipo-c{background:#fee2e2;color:#991b1b}
+.tipo-ref{font-size:.67rem;color:#78716c;font-style:italic}
+.aero-strip{padding:6px 13px 5px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.aero-left{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.aero-cod{font-family:'Courier New',monospace;font-size:.88rem;font-weight:800;color:#1e3a5f;white-space:nowrap}
+.aero-nom{font-size:.76rem;color:#475569}
+.aero-sep{color:#cbd5e1;margin:0 5px}
+.fir-tag{font-family:'Courier New',monospace;font-size:.67rem;color:#7c3aed;font-weight:600;background:#f5f3ff;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe;white-space:nowrap}
+.q-tag{font-family:'Courier New',monospace;font-size:.66rem;color:#0369a1;background:#f0f9ff;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap}
+.tipo-strip{padding:4px 13px 0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:.72rem}
+.c-sep{height:1px;background:#e2e8f0}
+.raw-notam-box{font-family:'Courier New',monospace;font-size:.75rem;color:#374151;line-height:1.7;white-space:pre-wrap;word-break:break-word;background:#f8fafc;padding:10px 12px 10px 13px;border-bottom:1px solid #e2e8f0}
+.c-bottom{padding:12px 13px 0 13px}
+.ck-display{font-family:'Courier New',monospace;font-size:2.1rem;font-weight:900;letter-spacing:.03em;line-height:1;margin-bottom:5px}
+.ck-blue{color:#2563eb}
+.ck-red{color:#db2777}
+.ck-gray{color:#94a3b8}
+.ck-vence{font-size:.76rem;color:#475569;margin-bottom:2px}
+.ck-rest{font-size:.72rem;color:#94a3b8;margin-bottom:10px}
+.ck-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ck-left{flex:1}
+.ck-right{display:flex;align-items:center;gap:5px;font-size:.73rem;color:#64748b;white-space:nowrap;padding-top:4px}
+.st-dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0}
+.st-dot.ring{background:#ef4444;animation:blink .55s infinite}
+.perm-wrap{display:flex;align-items:center;gap:10px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:7px;padding:11px 13px;margin-bottom:12px}
+.perm-ico{font-size:1.35rem}
+.perm-txt{font-size:.84rem;font-weight:700;color:#6d28d9}
+.perm-sub{font-size:.69rem;color:#a78bfa;margin-top:1px}
+.c-btns{display:flex;margin-top:10px;border-top:1px solid #e2e8f0;border-radius:0 0 7px 7px;overflow:hidden}
+.c-btns .btn{flex:1;padding:11px 8px;border:none;border-radius:0;font-size:.85rem;font-weight:700;cursor:pointer;transition:filter .15s}
+.c-btns .btn:hover{filter:brightness(1.07)}
+.btn-sil-act{background:#e2e8f0;color:#64748b;display:none}
+.btn-no-alm{background:#e2e8f0;color:#94a3b8;cursor:default}
+.btn-del{background:linear-gradient(135deg,#e0306a,#b81050);color:#fff}
+.emit-foot{padding:5px 13px 6px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:.7rem;color:#94a3b8;display:flex;align-items:center;gap:5px;border-radius:0 0 7px 7px}
+.emit-foot b{font-family:'Courier New',monospace;color:#475569;font-weight:700}
+.fetch-panel{margin-top:14px;background:#f0f4fc;border:1px solid #c8d8f0;border-radius:8px;overflow:hidden}
+.fetch-hdr{padding:9px 12px;background:linear-gradient(135deg,#1c2e4a,#2a4060);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.fetch-hdr-title{color:#fff;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.fetch-hdr-arrow{color:#a8c0d8;font-size:.75rem;transition:transform .2s}
+.fetch-hdr-arrow.open{transform:rotate(180deg)}
+.fetch-body{padding:12px;display:none}
+.fetch-body.open{display:block}
+.fetch-label{font-size:.72rem;color:#4a5a6a;font-weight:600;margin-bottom:5px}
+.btn-fetch{background:linear-gradient(135deg,#1c2e4a,#2a4060);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:filter .15s}
+.btn-fetch:hover{filter:brightness(1.15)}
+.btn-fetch:disabled{opacity:.55;cursor:not-allowed}
+.btn-fetch-all{width:100%;padding:10px;border:none;border-radius:7px;background:linear-gradient(135deg,#1c2e4a,#2563eb);color:#fff;font-size:.84rem;font-weight:700;cursor:pointer;transition:filter .15s;letter-spacing:.02em}
+.btn-fetch-all:hover{filter:brightness(1.1)}
+.btn-fetch-all:disabled{opacity:.55;cursor:not-allowed}
+.fetch-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.chip-group-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:4px;margin-top:4px}
+.chip{padding:3px 9px;border-radius:20px;font-size:.69rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Courier New',monospace;user-select:none}
+.chip-int{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.chip-int:hover,.chip-int.sel{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.chip-nat{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.chip-nat:hover,.chip-nat.sel{background:#d97706;color:#fff;border-color:#d97706}
+.fetch-icao-wrap{display:flex;gap:6px;margin-bottom:10px}
+.fetch-icao-wrap input{flex:1;padding:7px 10px;border:1px solid #c8d0e0;border-radius:6px;font-family:'Courier New',monospace;font-size:.78rem;color:#1c2e4a;background:#fff;outline:none;text-transform:uppercase}
+.fetch-icao-wrap input:focus{border-color:#4a7fc0}
+.fetch-status{font-size:.72rem;color:#4a5a6a;min-height:18px;display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.spin{display:inline-block;animation:spin360 .8s linear infinite}
+@keyframes spin360{to{transform:rotate(360deg)}}
+.fetch-ok{color:#16a34a}
+.fetch-err{color:#dc2626}
+.fetch-info{color:#2563eb}
+.auto-refresh-row{display:flex;align-items:center;gap:8px;font-size:.72rem;color:#4a5a6a}
+.toggle-sw{position:relative;width:34px;height:18px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#c8d0e0;border-radius:20px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;left:2px;top:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-sw input:checked+.toggle-slider{background:#2563eb}
+.toggle-sw input:checked+.toggle-slider:before{transform:translateX(16px)}
+.filter-bar{display:flex;align-items:center;gap:7px;padding:9px 14px 8px;background:#f4f7fc;border-bottom:2px solid #e0e8f4;flex-wrap:wrap}
+.filter-label{font-size:.68rem;color:#6b7a9a;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-right:2px}
+.filter-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:.72rem;font-weight:700;border:2px solid #d0d8f0;background:#fff;color:#4a6a9a;cursor:pointer;transition:all .18s;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.filter-btn svg{flex-shrink:0}
+.filter-btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.filter-btn:active{transform:translateY(0)}
+.filter-btn.f-todos{border-color:#94a3b8;color:#334155}
+.filter-btn.f-todos:hover{border-color:#1c2e4a;background:#eef2fb}
+.filter-btn.f-todos.active{background:#1c2e4a;color:#fff;border-color:#1c2e4a;box-shadow:0 2px 8px rgba(28,46,74,.3)}
+.filter-btn.f-est{border-color:#6ee7b7;color:#065f46}
+.filter-btn.f-est:hover{border-color:#10b981;background:#ecfdf5}
+.filter-btn.f-est.active{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border-color:#059669;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.filter-btn.f-sino{border-color:#c4b5fd;color:#5b21b6}
+.filter-btn.f-sino:hover{border-color:#7c3aed;background:#f5f3ff}
+.filter-btn.f-sino.active{background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;border-color:#6d28d9;box-shadow:0 2px 8px rgba(109,40,217,.35)}
+.filter-btn.f-perm{border-color:#7dd3fc;color:#0c4a6e}
+.filter-btn.f-perm:hover{border-color:#0ea5e9;background:#f0f9ff}
+.filter-btn.f-perm.active{background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;border-color:#0369a1;box-shadow:0 2px 8px rgba(14,165,233,.35)}
+.filter-search-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 14px 8px;background:#f8fafc;border-bottom:1px solid #e0e8f4}
+.fsearch-wrap{display:flex;align-items:center;gap:0;border:1.5px solid #c8d4f0;border-radius:20px;background:#fff;overflow:hidden;flex:1;min-width:140px;max-width:220px;transition:border-color .15s}
+.fsearch-wrap:focus-within{border-color:#4a7fc0}
+.fsearch-icon{padding:0 8px 0 10px;color:#94a3b8;font-size:.8rem;user-select:none}
+.fsearch-input{flex:1;border:none;outline:none;padding:5px 10px 5px 0;font-family:'Courier New',monospace;font-size:.75rem;font-weight:700;color:#1c2e4a;background:transparent;text-transform:uppercase;letter-spacing:.06em}
+.fsearch-input::placeholder{color:#b0bcc8;font-family:Arial,sans-serif;font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem}
+.fsearch-clear{padding:0 9px;color:#b0bcc8;cursor:pointer;font-size:.9rem;user-select:none;transition:color .15s}
+.fsearch-clear:hover{color:#e03050}
+.fsearch-count{font-size:.67rem;color:#94a3b8;white-space:nowrap}
+.toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:#1c2e4a;color:#fff;border-radius:9px;padding:11px 18px;font-size:.8rem;max-width:360px;box-shadow:0 6px 24px rgba(0,0,0,.25);border-left:4px solid #4a7fc0;opacity:0;transform:translateY(12px);transition:all .25s}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-left-color:#4de89c}
+.toast.err{border-left-color:#e03050}
+@media(max-width:860px){.cols{grid-template-columns:1fr;display:flex;flex-direction:column}.left-sticky-col{position:static!important}.ph,.board-ph,.filter-bar,.filter-search-row{position:static!important}.board-body{flex:none;overflow-y:visible}.right-panel{height:auto;position:static}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="save-ind"><span class="save-dot"></span> Guardando...</div>
+  <h1>NOTAM ALARM — FIR SPIM</h1>
+  <p>Sistema de Alarmas NOTAM en Tiempo Real — Fuente: CORPAC S.A.</p>
+</div>
+
+<div class="utc-bar">
+  <span class="utc-lbl">Hora UTC</span>
+  <span class="utc-val" id="utcClock">--:--:--</span>
+  <span class="utc-lbl" id="utcDate" style="margin-left:4px;"></span>
+</div>
+
+<div class="wrap">
+  <div class="cols">
+
+    <!-- LEFT: ENTRADA -->
+    <div class="left-sticky-col">
+      <div class="panel">
+        <div class="ph">
+          <span class="ph-icon">✈</span>
+          <h2>Entrada de NOTAMs</h2>
+        </div>
+        <div class="left-body">
+          <textarea id="txtInput" placeholder="Pegue aquí NOTAMs o use la búsqueda automática"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-proc" onclick="procesar()">Procesar NOTAMs</button>
+            <button class="btn btn-clr" onclick="limpiar()">Limpiar Todo</button>
+          </div>
+
+          <div class="ibox ib-g" style="margin-top:12px;">
+            <div class="title">⚡ Búsqueda Automática CORPAC</div>
+            La API se actualiza <b>cada 1 minuto</b> automáticamente.<br>
+            Fuente: <b>appoperacional.corpac.gob.pe</b> — NOTAM Distribución
+          </div>
+
+          <!-- AUTO-FETCH PANEL -->
+          <div class="fetch-panel" style="margin-top:14px;">
+            <div class="fetch-hdr" onclick="toggleFetchPanel()">
+              <div class="fetch-hdr-title">🛰 Búsqueda Automática — CORPAC API</div>
+              <span class="fetch-hdr-arrow open" id="fetchArrow">▼</span>
+            </div>
+            <div class="fetch-body open" id="fetchBody">
+              <button class="btn-fetch-all" onclick="fetchFIR()">🌐 Cargar todos los NOTAMs FIR SPIM desde CORPAC</button>
+              <div class="fetch-status" id="fetchStatus"></div>
+              <div class="auto-refresh-row">
+                <label class="toggle-sw">
+                  <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span>Auto-actualizar cada <b>1 min</b></span>
+                <span id="nextRefreshLabel" style="color:#9ca3af;margin-left:4px;"></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: PIZARRA -->
+    <div class="panel right-panel">
+      <div class="board-ph">
+        <div class="board-ph-left">
+          <span class="ph-icon">✈</span>
+          <h2>Pizarra de NOTAMs Activos</h2>
+          <span class="board-count" id="boardCount"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="sort-badge">Ordenado por Vencimiento</span>
+          <div class="nav-arrows" id="navArrows">
+            <button class="nav-btn" id="navUp" onclick="navNotam(-1)">▲</button>
+            <span class="nav-pos" id="navPos">1/1</span>
+            <button class="nav-btn" id="navDown" onclick="navNotam(1)">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Filtrar:</span>
+        <button class="filter-btn f-todos active" id="fbTodos" onclick="setFiltro('todos')">☰ Todos</button>
+        <button class="filter-btn f-est" id="fbEst" onclick="setFiltro('est')">⏰ Con EST</button>
+        <button class="filter-btn f-sino" id="fbSino" onclick="setFiltro('sino')">⊘ Sin EST</button>
+        <button class="filter-btn f-perm" id="fbPerm" onclick="setFiltro('perm')">♾ PERM</button>
+      </div>
+      <div class="filter-search-row">
+        <div class="fsearch-wrap">
+          <input class="fsearch-input" id="filtroAero" maxlength="4" placeholder="Aeródromo OACI" oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroAero')">✕</span>
+        </div>
+        <div class="fsearch-wrap">
+          <input class="fsearch-input" id="filtroQ" maxlength="12" placeholder="Código Q" oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroQ')">✕</span>
+        </div>
+        <div class="fsearch-wrap" style="flex:2;max-width:340px;">
+          <input class="fsearch-input" id="filtroTexto" placeholder="Buscar en descripción..." oninput="aplicarBusqueda()" autocomplete="off" style="text-transform:none;letter-spacing:0;font-family:Arial,sans-serif;font-size:.73rem;">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroTexto')">✕</span>
+        </div>
+        <div class="fsearch-wrap" style="min-width:140px;max-width:180px;">
+          <input class="fsearch-input" id="filtroNumero" maxlength="12" placeholder="Nº NOTAM" oninput="aplicarBusqueda()" autocomplete="off">
+          <span class="fsearch-clear" onclick="limpiarFiltro('filtroNumero')">✕</span>
+        </div>
+        <span class="fsearch-count" id="filtroCount"></span>
+      </div>
+      <div class="board-body" id="board">
+        <div class="empty-s">
+          <div class="ei">📡</div>
+          <p>Cargando NOTAMs desde CORPAC...</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SK='notam_alarm_v2';
+var notams=[];
+var alarmas={};
+var alarmaON={};
+var actx=null;
+var filtroActual='todos';
+var autoRefreshTimer=null;
+var AUTO_REFRESH_MS=60000;
+var API_BASE=window.location.origin;
+var navIdx=0;
+
+function guardar(){try{localStorage.setItem(SK,JSON.stringify(notams))}catch(e){}}
+function cargar(){try{var d=localStorage.getItem(SK);if(d)notams=JSON.parse(d)}catch(e){notams=[]}}
+
+function tickUtc(){
+  var n=new Date(),p=function(x){return('0'+x).slice(-2)};
+  document.getElementById('utcClock').textContent=p(n.getUTCHours())+':'+p(n.getUTCMinutes())+':'+p(n.getUTCSeconds());
+  var M=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  document.getElementById('utcDate').textContent=p(n.getUTCDate())+' '+M[n.getUTCMonth()]+' '+n.getUTCFullYear();
+}
+setInterval(tickUtc,1000);tickUtc();
+
+var RE_ID=/\b([AC])(\d{4})\/((\d{4})|(\d{2}))\b/;
+function pId(txt){var m=txt.match(RE_ID);if(!m)return null;var yr=m[3].length===2?'20'+m[3]:m[3];return{raw:m[1]+m[2]+'/'+m[3],disp:m[1]+m[2]+'/'+yr,serie:m[1],num:m[2]}}
+function s10(s){if(!s||s.length!==10)return null;var d=new Date(Date.UTC(2000+~~s.slice(0,2),~~s.slice(2,4)-1,~~s.slice(4,6),~~s.slice(6,8),~~s.slice(8,10)));return isNaN(d)?null:d.getTime()}
+function pB(txt){var m=txt.match(/\bB\)\s*(\d{10})/i);if(!m)return null;var ts=s10(m[1]);return ts?{ts:ts,raw:m[1]}:null}
+function pC(txt){if(/\bC\)\s*PERM\b/i.test(txt))return{perm:true,ts:null,est:false,raw:'PERM'};var m=txt.match(/\bC\)\s*(\d{10})\s*(EST)?/i);if(!m)return null;var ts=s10(m[1]);if(!ts)return null;return{perm:false,ts:ts,est:!!m[2],raw:m[1]}}
+function pA(txt){var m=txt.match(/\bA\)\s*([^\r\n]+)/i);if(!m)return null;var tokens=m[1].match(/\b([A-Z]{4})\b/g);if(!tokens)return null;tokens=tokens.filter(function(t){return/^[A-Z]{4}$/.test(t)});return tokens.length?tokens.join(' '):null}
+function pQ(txt){var m=txt.match(/\bQ\)\s*([A-Z]{4})\/([A-Z0-9]+)/i);return m?{fir:m[1],q:m[2]}:null}
+function pE(txt){var m=txt.match(/\bE\)\s*([\s\S]+?)(?=\r?\n[A-GN]\)|\r?\nNOTAMR|\r?\nNOTAMC|$)/i);return m?m[1].replace(/\s+$/,''):null}
+function pTipo(txt){var m=txt.match(/\b(NOTAMR|NOTAMN|NOTAMC)\s*([AC]\d{4}\/\d{2,4})?/i);if(!m)return null;return{tipo:m[1].toUpperCase(),ref:m[2]||null}}
+
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function parseFullNotam(rawText,idx){
+  var id=pId(rawText);if(!id)return null;
+  var b=pB(rawText),c=pC(rawText),a=pA(rawText),q=pQ(rawText),e=pE(rawText),tipo=pTipo(rawText);
+  var now=Date.now();
+  var status='active',statusLabel='ACTIVO',statusCls='b-act';
+  if(c){if(c.perm){status='perm';statusLabel='PERM';statusCls='b-perm'}else if(c.ts<=now){status='expired';statusLabel='VENCIDO';statusCls='b-exp'}else if(c.ts-now<3600000){status='urgent';statusLabel='<1H';statusCls='b-mas-urg'}else if(c.ts-now<7200000){status='soon';statusLabel='<2H';statusCls='b-urg'}else{status='prox';statusLabel='PRÓXIMO';statusCls='b-prox'}}
+  else if(b){if(b.ts>now)status='active';else status='expired'}
+  var estLabel=null;if(c&&c.est)estLabel='CON EST';else if(c&&!c.est&&!c.perm)estLabel='SIN EST';
+  var cls='ncard';if(id.serie==='C')cls+=' serie-C';if(status==='expired')cls+=' expired';
+  return{id:id.raw,disp:id.disp,serie:id.serie,num:id.num,aero:a||'',q:q||{},e:e||'',b:b,c:c,tipo:tipo||{tipo:'NOTAMN',ref:null},estLabel:estLabel,status:status,statusLabel:statusLabel,statusCls:statusCls,cls:cls,raw:rawText,idx:idx};
+}
+
+function renderCard(n){
+  var now=Date.now();
+  var clockHtml='',venceHtml='';
+  if(n.c){
+    if(n.c.perm){
+      clockHtml='<div class="perm-wrap"><span class="perm-ico">♾</span><div><div class="perm-txt">PERMANENTE</div><div class="perm-sub">Sin fecha de vencimiento</div></div></div>';
+    }else if(n.c.ts){
+      var rest=n.c.ts-now;
+      if(rest<=0){clockHtml='<div class="ck-display ck-gray">00:00:00</div><div class="ck-rest">VENCIDO</div>'}
+      else{
+        var hh=Math.floor(rest/3600000),mm=Math.floor((rest%3600000)/60000),ss=Math.floor((rest%60000)/1000);
+        var ckCls=rest<3600000?'ck-red':'ck-blue';
+        clockHtml='<div class="ck-display '+ckCls+'">'+('0'+hh).slice(-2)+':'+('0'+mm).slice(-2)+':'+('0'+ss).slice(-2)+'</div>';
+        var f=new Date(n.c.ts);
+        venceHtml='<div class="ck-vence">Vence: '+('0'+f.getUTCDate()).slice(-2)+'/'+('0'+(f.getUTCMonth()+1)).slice(-2)+'/'+f.getUTCFullYear()+' '+('0'+f.getUTCHours()).slice(-2)+':'+('0'+f.getUTCMinutes()).slice(-2)+' UTC</div>';
+      }
+    }
+  }else{
+    clockHtml='<div class="ck-display ck-gray">--:--:--</div><div class="ck-rest">Sin fecha de vencimiento</div>';
+  }
+  var tipoBadge='';
+  if(n.tipo){
+    var tCls=n.tipo.tipo==='NOTAMC'?'bdg-tipo-c':n.tipo.tipo==='NOTAMR'?'bdg-tipo-r':'bdg-tipo-n';
+    tipoBadge='<span class="bdg-tipo '+tCls+'">'+n.tipo.tipo+'</span>';
+    if(n.tipo.ref)tipoBadge+=' <span class="tipo-ref">ref: '+esc(n.tipo.ref)+'</span>';
+  }
+  var estBadge='';
+  if(n.estLabel==='CON EST')estBadge='<span class="bdg b-est">CON EST</span>';
+  else if(n.estLabel==='SIN EST')estBadge='<span class="bdg b-sino">SIN EST</span>';
+  else if(n.estLabel==='PERM')estBadge='<span class="bdg b-perm">PERM</span>';
+  var serieBadge=n.serie==='A'?'<span class="bdg b-int">INT</span>':'<span class="bdg b-nac">NAC</span>';
+  var aeroHtml='';
+  if(n.aero){var codes=n.aero.split(' ');aeroHtml='<div class="aero-strip"><div class="aero-left">'+codes.map(function(c){return'<span class="aero-cod">'+esc(c)+'</span>'}).join('<span class="aero-sep">·</span>')+'</div>'+(n.q.fir?'<span class="fir-tag">FIR '+esc(n.q.fir)+'</span>':'')+'</div>'}
+  var tipoStrip='';
+  if(n.q.q)tipoStrip='<div class="tipo-strip"><span class="q-tag">Q) '+esc(n.q.fir)+'/'+esc(n.q.q)+'</span></div>';
+  var isRinging=alarmaON[n.idx]&&n.status==='urgent';
+  if(isRinging)n.cls+=' ringing';
+  var ringBtn='<button class="btn btn-sil-act" id="ringBtn-'+n.idx+'" onclick="silenciarAlarma('+n.idx+')" style="display:'+(isRinging?'inline-block':'none')+'">🔕 Silenciar</button>';
+  return'<div class="'+n.cls+'" id="card-'+n.idx+'">'+
+
+    '<div class="c-head"><span class="c-id">'+esc(n.disp)+'</span><div class="c-badges">'+tipoBadge+serieBadge+estBadge+'<span class="bdg '+n.statusCls+'">'+n.statusLabel+'</span></div></div>'+
+    aeroHtml+tipoStrip+
+    '<div class="c-sep"></div>'+
+    '<div class="raw-notam-box">'+esc(n.raw)+'</div>'+
+    '<div class="c-bottom">'+clockHtml+venceHtml+'</div>'+
+    '<div class="c-btns">'+ringBtn+'<button class="btn btn-del" onclick="eliminarNotam(\''+esc(n.id)+'\')">✕ Eliminar</button></div>'+
+    '</div>';
+}
+
+function render(){
+  var board=document.getElementById('board');
+  var filtered=notams.filter(function(n){
+    if(!n)return false;
+    if(filtroActual==='est'&&n.estLabel!=='CON EST')return false;
+    if(filtroActual==='sino'&&n.estLabel!=='SIN EST')return false;
+    if(filtroActual==='perm'&&n.status!=='perm')return false;
+    var fa=document.getElementById('filtroAero').value.toUpperCase();
+    var fq=document.getElementById('filtroQ').value.toUpperCase();
+    var ft=document.getElementById('filtroTexto').value.toUpperCase();
+    var fn=document.getElementById('filtroNumero').value.toUpperCase();
+    if(fa&&n.aero.indexOf(fa)===-1&&n.id.indexOf(fa)===-1)return false;
+    if(fq&&(!n.q.q||n.q.q.toUpperCase().indexOf(fq)===-1))return false;
+    if(ft&&n.raw.toUpperCase().indexOf(ft)===-1&&n.e.toUpperCase().indexOf(ft)===-1)return false;
+    if(fn&&n.id.toUpperCase().indexOf(fn)===-1)return false;
+    return true;
+  });
+  filtered.sort(function(a,b){
+    if(a.status==='expired'&&b.status!=='expired')return 1;
+    if(b.status==='expired'&&a.status!=='expired')return-1;
+    if(a.c&&a.c.ts&&b.c&&b.c.ts)return a.c.ts-b.c.ts;
+    if(a.c&&a.c.ts)return-1;
+    if(b.c&&b.c.ts)return 1;
+    return 0;
+  });
+  document.getElementById('boardCount').textContent=filtered.length+' NOTAM'+(filtered.length!==1?'s':'');
+  var fc=document.getElementById('filtroCount');
+  var totalF=notams.length;
+  fc.textContent=filtered.length===totalF?'':filtered.length+'/'+totalF;
+  if(!filtered.length){board.innerHTML='<div class="empty-s"><div class="ei">📡</div><p>Sin NOTAMs que mostrar</p></div>';return}
+  board.innerHTML=filtered.map(renderCard).join('');
+  // Update countdowns
+  filtered.forEach(function(n){
+    if(n.c&&n.c.ts&&!n.c.perm){
+      var rest=n.c.ts-Date.now();
+      if(rest>0){
+        var hh=Math.floor(rest/3600000),mm=Math.floor((rest%3600000)/60000),ss=Math.floor((rest%60000)/1000);
+        var el=document.querySelector('#card-'+n.idx+' .ck-display');
+        if(el){var ckCls=rest<3600000?'ck-red':'ck-blue';el.className='ck-display '+ckCls;el.textContent=('0'+hh).slice(-2)+':'+('0'+mm).slice(-2)+':'+('0'+ss).slice(-2)}
+      }
+    }
+  });
+  checkAlarms(filtered);
+}
+
+function checkAlarms(list){
+  var now=Date.now();
+  list.forEach(function(n){
+    if(!n.c||n.c.perm||!n.c.ts||alarmas[n.idx])return;
+    var rest=n.c.ts-now;
+    if(rest>0&&rest<=600000){
+      alarmas[n.idx]=setInterval(function(){
+        if(!alarmaON[n.idx]){alarmaON[n.idx]=true;playBeep();render()}
+      },2000);
+    }
+  });
+}
+
+function playBeep(){
+  try{
+    if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(),g=actx.createGain();
+    o.connect(g);g.connect(actx.destination);
+    o.frequency.value=880;o.type='square';g.gain.value=0.3;
+    o.start();o.stop(actx.currentTime+0.15);
+    setTimeout(function(){var o2=actx.createOscillator(),g2=actx.createGain();o2.connect(g2);g2.connect(actx.destination);o2.frequency.value=1100;o2.type='square';g2.gain.value=0.3;o2.start();o2.stop(actx.currentTime+0.15)},200);
+  }catch(e){}
+}
+
+function silenciarAlarma(idx){alarmaON[idx]=false;clearInterval(alarmas[idx]);delete alarmas[idx];var b=document.getElementById('ringBtn-'+idx);if(b)b.style.display='none';toast('Alarma silenciada','ok')}
+function eliminarNotam(id){notams=notams.filter(function(n){return n.id!==id});guardar();render();toast('NOTAM eliminado','ok')}
+function navNotam(dir){var cards=document.querySelectorAll('.ncard');if(!cards.length)return;cards[navIdx]&&cards[navIdx].classList.remove('nav-focus');navIdx=Math.max(0,Math.min(navIdx+dir,cards.length-1));cards[navIdx].classList.add('nav-focus');cards[navIdx].scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('navPos').textContent=(navIdx+1)+'/'+cards.length}
+function setFiltro(f){filtroActual=f;document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active')});document.getElementById('fb'+f.charAt(0).toUpperCase()+f.slice(1)).classList.add('active');render()}
+function aplicarBusqueda(){render()}
+function limpiarFiltro(id){document.getElementById(id).value='';render()}
+function toast(msg,cls){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(cls||'');setTimeout(function(){t.className='toast'},2500)}
+
+function procesar(){
+  var txt=document.getElementById('txtInput').value.trim();if(!txt){toast('Ingrese NOTAMs','err');return}
+  var parts=txt.split(/(?=[AC]\d{4}\/\d{2,4})/);
+  var added=0;
+  parts.forEach(function(p){p=p.trim();if(!p)return;var n=parseFullNotam(p,notams.length+added);if(n){notams.push(n);added++}});
+  if(added){guardar();render();toast(added+' NOTAM(s) procesado(s)','ok');document.getElementById('txtInput').value=''}
+  else{toast('No se detectaron NOTAMs válidos','err')}
+}
+function limpiar(){notams=[];alarmas={};alarmaON={};guardar();render();toast('Todo limpiado','ok')}
+
+function toggleFetchPanel(){var b=document.getElementById('fetchBody'),a=document.getElementById('fetchArrow');b.classList.toggle('open');a.classList.toggle('open')}
+
+// ═══ CORPAC API FETCH ═══
+async function fetchFIR(){
+  var st=document.getElementById('fetchStatus');
+  st.innerHTML='<span class="spin">⏳</span> Consultando CORPAC API...';
+  try{
+    var resp=await fetch(API_BASE+'/notams');
+    if(!resp.ok)throw new Error('API returned '+resp.status);
+    var data=await resp.json();
+    if(!data.notams||!data.notams.length){st.innerHTML='<span class="fetch-err">⚠ No se encontraron NOTAMs</span>';return}
+    var added=0;
+    data.notams.forEach(function(n){
+      var raw=n.raw_text||'';
+      if(!raw){raw=n.id+' '+(n.type||'NOTAMN')+'\nQ)'+(n.q_line||'')+'\nA) '+(n.location||'')+'\nB) '+(n.effective_from||'')+'\nC) '+(n.effective_until||'')+'\nE) '+(n.description||'')}
+      var parsed=parseFullNotam(raw,notams.length+added);
+      if(parsed){
+        var exists=notams.some(function(ex){return ex.id===parsed.id});
+        if(!exists){notams.push(parsed);added++}
+        else{
+          var idx=notams.findIndex(function(ex){return ex.id===parsed.id});
+          if(idx>=0)notams[idx]=parsed;
+        }
+      }
+    });
+    guardar();render();
+    st.innerHTML='<span class="fetch-ok">✓ '+data.total_count+' NOTAMs cargados desde CORPAC ('+data.extraction_date+')</span>';
+    toast(data.total_count+' NOTAMs actualizados desde CORPAC','ok');
+  }catch(e){
+    st.innerHTML='<span class="fetch-err">✗ Error: '+esc(e.message)+'</span>';
+    toast('Error al consultar CORPAC API','err');
+  }
+}
+
+var refreshCount=0;
+function toggleAutoRefresh(){
+  if(document.getElementById('autoRefresh').checked){
+    autoRefreshTimer=setInterval(function(){
+      fetchFIR();
+      refreshCount++;
+      document.getElementById('nextRefreshLabel').textContent='(refresh #'+refreshCount+')';
+    },AUTO_REFRESH_MS);
+    toast('Auto-actualización activada (1 min)','ok');
+  }else{
+    clearInterval(autoRefreshTimer);autoRefreshTimer=null;
+    toast('Auto-actualización desactivada','ok');
+  }
+}
+
+// ═══ INIT ═══
+cargar();
+if(notams.length)render();
+fetchFIR();
+toggleAutoRefresh();
+</script>
+</body>
+</html>
