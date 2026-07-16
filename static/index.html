@@ -1209,12 +1209,19 @@ function sortNotams(){
       var ta = a.publishedAt ? new Date(a.publishedAt).getTime() : (a.fechaTs || 0);
       var tb = b.publishedAt ? new Date(b.publishedAt).getTime() : (b.fechaTs || 0);
       
-      // Si las fechas son iguales, ordenar por número de serie correlativo
+      // Si las fechas son iguales, ordenar por número de serie y año correlativo
       if(ta === tb){
-        // Extraer número del NOTAM (ej: A0001/25 → 1, C0123/26 → 123)
+        // Extraer número y año del NOTAM (ej: A0001/25 → num=1, year=25)
         var numA = parseInt(a.id.num) || 0;
         var numB = parseInt(b.id.num) || 0;
-        return numB - numA; // descendente: primero el de mayor número
+        var yearA = parseInt(a.id.year) || 0;
+        var yearB = parseInt(b.id.year) || 0;
+        
+        // Primero comparar por año (mayor primero)
+        if(yearA !== yearB) return yearB - yearA;
+        
+        // Si año igual, comparar por número (mayor primero)
+        return numB - numA;
       }
       
       return tb - ta; // descendente: más reciente primero
