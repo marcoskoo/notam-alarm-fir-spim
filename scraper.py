@@ -23,7 +23,10 @@ LOGIN_URL = "https://appoperacional.corpac.gob.pe/NOTAM/newlog.php"
 DIST_URL = "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action="
 
 # Servidor remoto (Railway)
-REMOTE_URL = os.environ.get("NOTAM_API_URL", "https://notam-alarm-spim-production.up.railway.app")
+REMOTE_URLS = [
+    os.environ.get("NOTAM_API_URL", "https://notam-alarm1.up.railway.app"),
+    "https://notam-alarm.up.railway.app",
+]
 UPLOAD_SECRET = os.environ.get("UPLOAD_SECRET", "notam-spim-2026")
 
 
@@ -197,30 +200,31 @@ def run_scraper(headless: bool = True) -> dict:
 
 
 def upload_to_server(data: dict):
-    """Sube los NOTAMs al servidor Railway vía POST /upload."""
-    url = f"{REMOTE_URL}/upload"
+    """Sube los NOTAMs a todos los servidores Railway vía POST /upload."""
     payload = json.dumps({
         "notams": data.get("notams", []),
         "extraction_date": data.get("extraction_date", time.strftime("%Y-%m-%d %H:%M:%S")),
     }).encode("utf-8")
 
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "X-Secret": UPLOAD_SECRET,
-        },
-    )
+    results = []
+    for url in REMOTE_URLS:
+        req = urllib.request.Request(
+            url + "/upload",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "X-Secret": UPLOAD_SECRET,
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                print(f"[upload] {url} OK — {result.get('total_received', '?')} recibidos")
+                results.append(result)
+        except Exception as e:
+            print(f"[upload] {url} Error: {e}")
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            print(f"[upload] OK — {result.get('total_received', '?')} recibidos, {result.get('total_alive', '?')} vivos")
-            return result
-    except Exception as e:
-        print(f"[upload] Error: {e}")
-        return None
+    return results[0] if results else None
 
 
 if __name__ == "__main__":
