@@ -170,17 +170,14 @@ def run_scraper(headless: bool = True) -> dict:
 
     print(f"[scraper] {len(notams)} NOTAMs extraídos")
 
-    # Limpiar expirados
-    vivos = filter_expired(notams)
-
     result_data = {
         "territory": "PERU",
         "fir": "SPIM",
-        "total_count": len(vivos),
-        "serie_a_count": sum(1 for n in vivos if n["id"][0] == "A"),
-        "serie_c_count": sum(1 for n in vivos if n["id"][0] == "C"),
-        "notam_n_count": sum(1 for n in vivos if n["type"] == "NOTAMN"),
-        "notam_r_count": sum(1 for n in vivos if n["type"] == "NOTAMR"),
+        "total_count": len(notams),
+        "serie_a_count": sum(1 for n in notams if n["id"][0] == "A"),
+        "serie_c_count": sum(1 for n in notams if n["id"][0] == "C"),
+        "notam_n_count": sum(1 for n in notams if n["type"] == "NOTAMN"),
+        "notam_r_count": sum(1 for n in notams if n["type"] == "NOTAMR"),
         "source": "CORPAC S.A.",
         "source_url": DIST_URL,
         "extraction_date": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -189,13 +186,13 @@ def run_scraper(headless: bool = True) -> dict:
             "pais": "PERU", "serie": "Todas", "aerodromo": "Todos",
             "fir": "SPIM", "ver": "Vigentes"
         },
-        "notams": vivos,
+        "notams": notams,
     }
 
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2, ensure_ascii=False)
 
-    print(f"[scraper] {len(vivos)} NOTAMs vivos guardados")
+    print(f"[scraper] {len(notams)} NOTAMs guardados")
     return result_data
 
 

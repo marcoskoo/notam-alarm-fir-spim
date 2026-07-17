@@ -285,29 +285,12 @@ _refresh_running: bool = False
 
 
 async def _auto_refresh_loop():
-    """Limpia NOTAMs expirados cada N segundos. El scraper corre local."""
+    """Actualiza timestamp cada N segundos. El scraper corre local y sube vía /upload."""
     global _last_refresh, _refresh_count, _refresh_running
     while True:
         await asyncio.sleep(REFRESH_INTERVAL)
-        _refresh_running = True
-        try:
-            data = get_cached_notams()
-            if data.get("notams"):
-                vivos = _filter_expired(data["notams"])
-                if len(vivos) != len(data["notams"]):
-                    data["notams"] = vivos
-                    data["total_count"] = len(vivos)
-                    data["serie_a_count"] = sum(1 for n in vivos if n["id"][0] == "A")
-                    data["serie_c_count"] = sum(1 for n in vivos if n["id"][0] == "C")
-                    with open(CACHE_FILE, "w", encoding="utf-8") as f:
-                        json.dump(data, f, indent=2, ensure_ascii=False)
-                    print(f"[auto] Expirados limpiados — {len(vivos)} vivos")
-            _last_refresh = datetime.now().isoformat()
-            _refresh_count += 1
-        except Exception as e:
-            print(f"[auto] Error: {e}")
-        finally:
-            _refresh_running = False
+        _last_refresh = datetime.now().isoformat()
+        _refresh_count += 1
 
 
 @app.on_event("startup")
@@ -490,7 +473,7 @@ async def upload_notams(payload: dict, x_secret: str = Header(None)):
     if not notams:
         raise HTTPException(400, "No se enviaron NOTAMs")
 
-    # Guardar
+    # Guardar (CORPAC ya filtra Vigentes, no filtrar de nuevo)
     data = {
         "territory": "PERU",
         "fir": "SPIM",
@@ -504,11 +487,6 @@ async def upload_notams(payload: dict, x_secret: str = Header(None)):
         "notams": notams,
     }
 
-    # Filtrar expirados
-    vivos = _filter_expired(notams)
-    data["notams"] = vivos
-    data["total_count"] = len(vivos)
-
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -516,12 +494,10 @@ async def upload_notams(payload: dict, x_secret: str = Header(None)):
     _last_refresh = datetime.now().isoformat()
     _refresh_count += 1
 
-    print(f"[upload] {len(notams)} recibidos, {len(vivos)} vivos guardados")
+    print(f"[upload] {len(notams)} NOTAMs guardados")
 
     return {
         "status": "success",
         "total_received": len(notams),
-        "total_alive": len(vivos),
-        "eliminated": len(notams) - len(vivos),
         "last_updated": _last_refresh,
     }
