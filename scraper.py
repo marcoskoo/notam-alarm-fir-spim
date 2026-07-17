@@ -1,165 +1,197 @@
-from playwright.sync_api import sync_playwright
-import time
-import json
-import re
+"""
+NOTAM CORPAC Scraper — FIR SPIM
+Extrae NOTAMs vigentes y limpia expirados automáticamente.
+"""
+
 import os
-from urllib.parse import unquote, parse_qs
+import re
+import sys
+import json
+import time
+from datetime import datetime, timezone
+from playwright.sync_api import sync_playwright
 
-output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-os.makedirs(output_dir, exist_ok=True)
-URL_DISTRIBUCION = 'https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action='
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+CACHE_FILE = os.path.join(DATA_DIR, "notam_cache.json")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=False, slow_mo=200)
-    page = browser.new_page(viewport={'width': 1280, 'height': 900})
-    
-    print("1. Login...")
-    page.goto('https://appoperacional.corpac.gob.pe/NOTAM/newlog.php', timeout=60000)
-    time.sleep(3)
-    page.fill('#txtusu', 'aissphi')
-    page.fill('#txtpass', 'corpac')
-    page.click('#action')
-    time.sleep(5)
-    
-    print("2. NOTAM Distribucion...")
-    page.goto(URL_DISTRIBUCION, timeout=60000)
-    time.sleep(6)
-    
-    print("3. Buscar...")
-    page.evaluate('''() => {
-        var form = document.forms['frmConsultas'];
-        form.elements['txtcodpais'].value = 'SP';
-        form.elements['slSerie'].value = '';
-        form.elements['txtcodaero'].value = '';
-        form.elements['txtfir'].value = 'SPIM';
-        var radios = document.querySelectorAll('input[name="rdVer"]');
-        radios.forEach(function(r) { r.checked = (r.value === 'V'); });
-        form.elements['rdTemp'].value = 'V';
-    }''')
-    page.click('input[name="action"][value="Buscar"]')
-    time.sleep(15)
-    
-    print("4. Extrayendo NOTAMs...")
-    notams = page.evaluate('''() => {
-        var results = [];
-        var links = document.querySelectorAll('a[href^="mailto:"]');
-        
-        links.forEach(function(link) {
-            var href = link.getAttribute('href');
-            
-            // Extract body - everything after body=
-            var bodyIdx = href.indexOf('body=');
-            if (bodyIdx < 0) return;
-            var bodyRaw = href.substring(bodyIdx + 5);
-            var body = decodeURIComponent(bodyRaw);
-            
-            // Split by newlines
-            var lines = body.split('\\n');
-            
-            // Find NOTAM ID line
-            var notamId = '';
-            var notamStartIdx = 0;
-            
-            for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim();
-                var idMatch = line.match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
-                if (idMatch) {
-                    notamId = idMatch[1];
-                    notamStartIdx = i;
-                    break;
+CORPAC_USER = os.environ.get("CORPAC_USER", "aissphi")
+CORPAC_PASS = os.environ.get("CORPAC_PASS", "corpac")
+LOGIN_URL = "https://appoperacional.corpac.gob.pe/NOTAM/newlog.php"
+DIST_URL = "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action="
+
+
+def parse_notam_fields(details: str) -> dict:
+    eff_from = eff_until = schedule = description = ""
+    b = re.search(r"B\)\s*(\d{10})", details)
+    if b:
+        eff_from = b.group(1)
+    c = re.search(r"C\)\s*(\d{10}|PERM[^A-Z]*)", details)
+    if c:
+        eff_until = c.group(1).strip()
+    d = re.search(r"D\)\s*(.+?)(?=\s*[A-Z]\)|$)", details)
+    if d:
+        schedule = d.group(1).strip()
+    e = re.search(r"E\)\s*(.+?)(?:\s*F\)|$)", details, re.DOTALL)
+    description = e.group(1).strip() if e else details
+    return {
+        "effective_from": eff_from,
+        "effective_until": eff_until,
+        "schedule": schedule,
+        "description": description,
+    }
+
+
+def parse_expiry(date_str: str):
+    if not date_str or "PERM" in date_str.upper():
+        return None
+    try:
+        return datetime.strptime(date_str.strip()[:10], "%d%m%Y%H%M").replace(tzinfo=timezone.utc)
+    except (ValueError, IndexError):
+        return None
+
+
+def filter_expired(notams: list) -> list:
+    now = datetime.now(timezone.utc)
+    vivos = []
+    eliminados = []
+    for n in notams:
+        det = parse_notam_fields(n.get("details", "") or n.get("raw_text", ""))
+        exp = parse_expiry(det.get("effective_until", ""))
+        if exp and exp <= now:
+            eliminados.append(n["id"])
+            continue
+        vivos.append(n)
+    if eliminados:
+        print(f"[scraper] Expirados eliminados ({len(eliminados)}): {', '.join(eliminados)}")
+    return vivos
+
+
+def run_scraper(headless: bool = True) -> dict:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=headless)
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+
+        print("[scraper] Login...")
+        page.goto(LOGIN_URL, timeout=60000)
+        time.sleep(3)
+        page.fill("#txtusu", CORPAC_USER)
+        page.fill("#txtpass", CORPAC_PASS)
+        page.click("#action")
+        time.sleep(5)
+
+        print("[scraper] Abriendo NOTAM Distribución...")
+        page.goto(DIST_URL, timeout=60000)
+        time.sleep(6)
+
+        print("[scraper] Buscando FIR SPIM vigentes...")
+        page.evaluate("""() => {
+            var form = document.forms['frmConsultas'];
+            form.elements['txtcodpais'].value = 'SP';
+            form.elements['slSerie'].value = '';
+            form.elements['txtcodaero'].value = '';
+            form.elements['txtfir'].value = 'SPIM';
+            var radios = document.querySelectorAll('input[name="rdVer"]');
+            radios.forEach(function(r) { r.checked = (r.value === 'V'); });
+            form.elements['rdTemp'].value = 'V';
+        }""")
+        page.click('input[name="action"][value="Buscar"]')
+        time.sleep(15)
+
+        print("[scraper] Extrayendo NOTAMs...")
+        notams = page.evaluate("""() => {
+            var results = [];
+            var links = document.querySelectorAll('a[href^="mailto:"]');
+
+            links.forEach(function(link) {
+                var href = link.getAttribute('href');
+                var bodyIdx = href.indexOf('body=');
+                if (bodyIdx < 0) return;
+                var body = decodeURIComponent(href.substring(bodyIdx + 5));
+                var lines = body.split('\\n');
+
+                var notamId = '';
+                var notamStartIdx = 0;
+                for (var i = 0; i < lines.length; i++) {
+                    var m = lines[i].trim().match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
+                    if (m) { notamId = m[1]; notamStartIdx = i; break; }
                 }
-            }
-            
-            if (!notamId) return;
-            
-            // Get expand link for location (needed for pub date lookup)
-            var parent = link.closest('table');
-            var expandLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
-            var location = '';
-            if (expandLink) {
-                var ocultarHref = expandLink.getAttribute('href');
-                var locMatch = ocultarHref.match(/ocultarMensaje\\('([A-Z]{3,4})/);
-                if (locMatch) location = locMatch[1];
-            }
-            
-            // Extract publication date: sibling TR has <td id="{location}{notamId}-1"> with "Recibido el: DD/MM/YYYY HH:MM:SS"
-            var pubDate = '';
-            if (location && notamId) {
-                var dateEl = document.getElementById(location + notamId + '-1');
-                if (dateEl) {
-                    var dateText = dateEl.textContent;
-                    var dateMatch = dateText.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
-                    if (dateMatch) {
-                        pubDate = dateMatch[1];
+                if (!notamId) return;
+
+                var parent = link.closest('table');
+                var expLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
+                var location = '';
+                if (expLink) {
+                    var lm = expLink.getAttribute('href').match(/ocultarMensaje\\('([A-Z]{3,4})/);
+                    if (lm) location = lm[1];
+                }
+
+                var pubDate = '';
+                if (location && notamId) {
+                    var dateEl = document.getElementById(location + notamId + '-1');
+                    if (dateEl) {
+                        var dm = dateEl.textContent.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                        if (dm) pubDate = dm[1];
                     }
                 }
-            }
-            
-            // Get remaining lines after NOTAM ID
-            var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
-            
-            // Extract Q line
-            var qMatch = remaining.match(/Q\\)\\s*(.+)/);
-            var qLine = qMatch ? qMatch[1].trim() : '';
-            
-            // Extract detail lines (A through E)
-            var remaining2 = remaining;
-            if (qMatch) {
-                var qEndIdx = remaining2.indexOf('Q)');
-                if (qEndIdx >= 0) {
-                    remaining2 = remaining2.substring(qEndIdx + qMatch[0].length);
+
+                var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
+                var qMatch = remaining.match(/Q\\)\\s*(.+)/);
+                var qLine = qMatch ? qMatch[1].trim() : '';
+                var remaining2 = remaining;
+                if (qMatch) {
+                    var qi = remaining2.indexOf('Q)');
+                    if (qi >= 0) remaining2 = remaining2.substring(qi + qMatch[0].length);
                 }
-            }
-            var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
-            var details = detailMatches ? detailMatches[0].trim() : '';
-            
-            // Type
-            var typeMatch = lines[notamStartIdx].match(/(NOTAM[NRC])/);
-            var type = typeMatch ? typeMatch[1] : '';
-            
-            results.push({
-                id: notamId,
-                type: type,
-                location: location,
-                raw_text: (pubDate ? pubDate + '\\n' : '') + body.replace(/\\n/g, '\\r\\n'),
-                q_line: qLine,
-                details: details.replace(/\\n/g, '\\r\\n')
+                var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
+                var details = detailMatches ? detailMatches[0].trim() : '';
+                var typeMatch = lines[notamStartIdx].match(/(NOTAM[NRC])/);
+                var type = typeMatch ? typeMatch[1] : '';
+
+                results.push({
+                    id: notamId,
+                    type: type,
+                    location: location,
+                    raw_text: (pubDate ? pubDate + '\\n' : '') + body.replace(/\\n/g, '\\r\\n'),
+                    q_line: qLine,
+                    details: details.replace(/\\n/g, '\\r\\n')
+                });
             });
-        });
-        
-        return results;
-    }''')
-    
-    print(f"   NOTAMs: {len(notams)}")
-    
-    # Print first 3 for verification
-    for n in notams[:3]:
-        print(f"\n  [{n['id']}] {n['type']}")
-        print(f"  raw_text: {n['raw_text'][:100]}")
-    
+            return results;
+        }""")
+
+        browser.close()
+
+    print(f"[scraper] {len(notams)} NOTAMs extraídos")
+
+    # Limpiar expirados
+    vivos = filter_expired(notams)
+
     result_data = {
         "territory": "PERU",
         "fir": "SPIM",
-        "total_count": len(notams),
-        "serie_a_count": sum(1 for n in notams if n['id'][0] == 'A'),
-        "serie_c_count": sum(1 for n in notams if n['id'][0] == 'C'),
-        "notam_n_count": sum(1 for n in notams if n['type'] == 'NOTAMN'),
-        "notam_r_count": sum(1 for n in notams if n['type'] == 'NOTAMR'),
+        "total_count": len(vivos),
+        "serie_a_count": sum(1 for n in vivos if n["id"][0] == "A"),
+        "serie_c_count": sum(1 for n in vivos if n["id"][0] == "C"),
+        "notam_n_count": sum(1 for n in vivos if n["type"] == "NOTAMN"),
+        "notam_r_count": sum(1 for n in vivos if n["type"] == "NOTAMR"),
         "source": "CORPAC S.A.",
-        "source_url": URL_DISTRIBUCION,
+        "source_url": DIST_URL,
         "extraction_date": time.strftime("%Y-%m-%d %H:%M:%S"),
         "search_path": "Modulos/NOTAM/CONSULTAS/NOTAM Distribucion",
         "search_params": {
             "pais": "PERU", "serie": "Todas", "aerodromo": "Todos",
             "fir": "SPIM", "ver": "Vigentes"
         },
-        "notams": notams
+        "notams": vivos,
     }
-    
-    with open(os.path.join(output_dir, 'notam_peru_final.json'), 'w', encoding='utf-8') as f:
+
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(output_dir, 'notam_cache.json'), 'w', encoding='utf-8') as f:
-        json.dump(result_data, f, indent=2, ensure_ascii=False)
-    
-    browser.close()
-    print("\nListo!")
+
+    print(f"[scraper] {len(vivos)} NOTAMs vivos guardados")
+    return result_data
+
+
+if __name__ == "__main__":
+    run_scraper(headless="--show" not in sys.argv)

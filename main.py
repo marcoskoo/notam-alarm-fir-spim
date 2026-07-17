@@ -1,17 +1,40 @@
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-import re
-import json
-import os
+"""
+NOTAM FIR SPIM API - Railway Deploy
+====================================
+Auto-refresh cada 60s + limpieza automática de NOTAMs expirados.
+"""
 
+import os
+import re
+import sys
+import json
+import time
+import asyncio
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+
+# ---------------------------------------------------------------------------
+# Configuración
+# ---------------------------------------------------------------------------
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(APP_DIR, "data")
+CACHE_FILE = os.path.join(DATA_DIR, "notam_cache.json")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+REFRESH_INTERVAL = int(os.environ.get("REFRESH_INTERVAL", "60"))
+
+# ---------------------------------------------------------------------------
+# FastAPI
+# ---------------------------------------------------------------------------
 app = FastAPI(
     title="NOTAM FIR SPIM API",
-    description="API para consultar NOTAM de la FIR SPIM (Lima, Peru) - Fuente: CORPAC S.A.",
-    version="1.0.0"
+    description="API NOTAM FIR SPIM — CORPAC S.A. Auto-refresh + expirados automáticos.",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -22,6 +45,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ---------------------------------------------------------------------------
+# Models
+# ---------------------------------------------------------------------------
 class NotamItem(BaseModel):
     id: str
     type: Optional[str] = ""
@@ -35,6 +62,7 @@ class NotamItem(BaseModel):
     q_line: Optional[str] = ""
     raw_text: str
 
+
 class NotamResponse(BaseModel):
     fir: str
     total_count: int
@@ -42,307 +70,392 @@ class NotamResponse(BaseModel):
     source: str
     notams: List[NotamItem]
 
-def parse_notam_text(text: str) -> dict:
-    """Parse raw NOTAM text into structured fields"""
-    result = {
-        "id": "",
-        "series": "",
-        "fir": "SPIM",
-        "location": "",
-        "effective_from": None,
-        "effective_until": None,
-        "schedule": None,
-        "description": ""
-    }
-    
-    lines = text.strip().split('\n')
-    full_text = ' '.join(lines).strip()
-    
-    # Extract NOTAM ID (e.g., A4005/25 or C1969/26)
-    id_match = re.search(r'([AC]\d+/\d{2})', full_text)
-    if id_match:
-        result["id"] = id_match.group(1)
-        result["series"] = "A" if id_match.group(1).startswith("A") else "C"
-    
-    # Extract location (e.g., SPIM, SPJC, etc.)
-    loc_match = re.search(r'\b(SP[A-Z]{2}|LIMA)\b', full_text)
-    if loc_match:
-        result["location"] = loc_match.group(1)
-    else:
-        result["location"] = "SPIM"
-    
-    # Extract effective dates
-    b_match = re.search(r'B\)\s*(\d{10})', full_text)
-    if b_match:
-        result["effective_from"] = b_match.group(1)
-    
-    c_match = re.search(r'C\)\s*(\d{10}|PERM)', full_text)
-    if c_match:
-        result["effective_until"] = c_match.group(1)
-    
-    # Extract schedule
-    d_match = re.search(r'D\)\s*(.+?)(?=\s*[A-Z]\)|$)', full_text)
-    if d_match:
-        result["schedule"] = d_match.group(1).strip()
-    
-    # Extract description (after E) or the main content
-    e_match = re.search(r'(?:E\)\s*)(.+?)(?:\s*F\)|$)', full_text, re.DOTALL)
-    if e_match:
-        result["description"] = e_match.group(1).strip()
-    else:
-        # Use the full text minus the ID
-        result["description"] = full_text
-    
-    result["raw_text"] = full_text
-    
-    return result
 
-def get_notam_data() -> dict:
-    """Get cached NOTAM data"""
-    # Check data/ directory first (deployed), then same directory (local)
-    cache_file = os.path.join(os.path.dirname(__file__), "data", "notam_cache.json")
-    if not os.path.exists(cache_file):
-        cache_file = os.path.join(os.path.dirname(__file__), "notam_cache.json")
-    
-    if os.path.exists(cache_file):
-        with open(cache_file, 'r', encoding='utf-8') as f:
-            cache = json.load(f)
-        
-        # Convert new extraction format to API format
-        if cache.get("notams") and isinstance(cache["notams"][0], dict):
-            first = cache["notams"][0]
-            if "q_line" in first or "details" in first:
-                # New format - convert
-                notams = []
-                for n in cache["notams"]:
-                    # Parse B/C dates from details
-                    details = n.get("details", "")
-                    eff_from = None
-                    eff_until = None
-                    schedule = None
-                    
-                    b_match = re.search(r'B\)\s*(\d{10})', details)
-                    if b_match:
-                        eff_from = b_match.group(1)
-                    
-                    c_match = re.search(r'C\)\s*(\d{10}|PERM[^A-Z]*)', details)
-                    if c_match:
-                        eff_until = c_match.group(1).strip()
-                    
-                    d_match = re.search(r'D\)\s*(.+?)(?=\s*[A-Z]\)|$)', details)
-                    if d_match:
-                        schedule = d_match.group(1).strip()
-                    
-                    e_match = re.search(r'E\)\s*(.+?)(?:\s*F\)|$)', details, re.DOTALL)
-                    description = e_match.group(1).strip() if e_match else details
-                    
-                    notams.append({
-                        "id": n["id"],
-                        "type": n.get("type", ""),
-                        "series": "A" if n["id"][0] == "A" else "C",
-                        "fir": "SPIM",
-                        "location": n.get("location", ""),
-                        "effective_from": eff_from,
-                        "effective_until": eff_until,
-                        "schedule": schedule,
-                        "description": description,
-                        "q_line": n.get("q_line", ""),
-                        "raw_text": n.get("raw_text", "")
-                    })
-                
-                cache["notams"] = notams
-        
-        return cache
-    
+# ---------------------------------------------------------------------------
+# Cache helpers
+# ---------------------------------------------------------------------------
+def get_cached_notams() -> dict:
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
     return {"fir": "SPIM", "notams": [], "last_updated": None}
 
-def save_notam_data(data: dict):
-    """Save NOTAM data to cache"""
-    cache_file = os.path.join(os.path.dirname(__file__), "data", "notam_cache.json")
-    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-    with open(cache_file, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
 
-# Initialize with cached data from CORPAC scraper
-@app.on_event("startup")
-async def startup_event():
-    cache = get_notam_data()
-    if not cache.get("notams"):
-        # No data available - will need to run scraper
-        save_notam_data({
+def parse_notam_fields(details: str) -> dict:
+    eff_from = eff_until = schedule = description = ""
+    b = re.search(r"B\)\s*(\d{10})", details)
+    if b:
+        eff_from = b.group(1)
+    c = re.search(r"C\)\s*(\d{10}|PERM[^A-Z]*)", details)
+    if c:
+        eff_until = c.group(1).strip()
+    d = re.search(r"D\)\s*(.+?)(?=\s*[A-Z]\)|$)", details)
+    if d:
+        schedule = d.group(1).strip()
+    e = re.search(r"E\)\s*(.+?)(?:\s*F\)|$)", details, re.DOTALL)
+    description = e.group(1).strip() if e else details
+    return {
+        "effective_from": eff_from,
+        "effective_until": eff_until,
+        "schedule": schedule,
+        "description": description,
+    }
+
+
+def _to_api_items(data: dict) -> list:
+    items = []
+    for n in data.get("notams", []):
+        det = parse_notam_fields(n.get("details", "") or n.get("raw_text", ""))
+        items.append({
+            "id": n["id"],
+            "type": n.get("type", ""),
+            "series": "A" if n["id"][0] == "A" else "C",
             "fir": "SPIM",
-            "territory": "PERU",
-            "notams": [],
-            "last_updated": datetime.now().isoformat(),
-            "source": "CORPAC S.A. - https://appoperacional.corpac.gob.pe/NOTAM/"
+            "location": n.get("location", ""),
+            "effective_from": det["effective_from"] or None,
+            "effective_until": det["effective_until"] or None,
+            "schedule": det["schedule"] or None,
+            "description": det["description"],
+            "q_line": n.get("q_line", ""),
+            "raw_text": n.get("raw_text", ""),
         })
+    return items
 
+
+def _parse_expiry(date_str: str) -> Optional[datetime]:
+    if not date_str or "PERM" in date_str.upper():
+        return None
+    try:
+        return datetime.strptime(date_str.strip()[:10], "%d%m%Y%H%M").replace(tzinfo=timezone.utc)
+    except (ValueError, IndexError):
+        return None
+
+
+def _filter_expired(notams: list) -> list:
+    now = datetime.now(timezone.utc)
+    vivos = []
+    eliminados = []
+    for n in notams:
+        det = parse_notam_fields(n.get("details", "") or n.get("raw_text", ""))
+        exp = _parse_expiry(det.get("effective_until", ""))
+        if exp and exp <= now:
+            eliminados.append(n["id"])
+            continue
+        vivos.append(n)
+    if eliminados:
+        print(f"[auto] Expirados eliminados ({len(eliminados)}): {', '.join(eliminados)}")
+    return vivos
+
+
+# ---------------------------------------------------------------------------
+# Scraper (Playwright)
+# ---------------------------------------------------------------------------
+def run_scraper() -> dict:
+    from playwright.sync_api import sync_playwright
+
+    CORPAC_USER = os.environ.get("CORPAC_USER", "aissphi")
+    CORPAC_PASS = os.environ.get("CORPAC_PASS", "corpac")
+    LOGIN_URL = "https://appoperacional.corpac.gob.pe/NOTAM/newlog.php"
+    DIST_URL = "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action="
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+
+        print("[scraper] Login...")
+        page.goto(LOGIN_URL, timeout=60000)
+        time.sleep(3)
+        page.fill("#txtusu", CORPAC_USER)
+        page.fill("#txtpass", CORPAC_PASS)
+        page.click("#action")
+        time.sleep(5)
+
+        print("[scraper] Abriendo NOTAM Distribución...")
+        page.goto(DIST_URL, timeout=60000)
+        time.sleep(6)
+
+        print("[scraper] Buscando FIR SPIM vigentes...")
+        page.evaluate("""() => {
+            var form = document.forms['frmConsultas'];
+            form.elements['txtcodpais'].value = 'SP';
+            form.elements['slSerie'].value = '';
+            form.elements['txtcodaero'].value = '';
+            form.elements['txtfir'].value = 'SPIM';
+            var radios = document.querySelectorAll('input[name="rdVer"]');
+            radios.forEach(function(r) { r.checked = (r.value === 'V'); });
+            form.elements['rdTemp'].value = 'V';
+        }""")
+        page.click('input[name="action"][value="Buscar"]')
+        time.sleep(15)
+
+        print("[scraper] Extrayendo NOTAMs...")
+        notams = page.evaluate("""() => {
+            var results = [];
+            var links = document.querySelectorAll('a[href^="mailto:"]');
+
+            links.forEach(function(link) {
+                var href = link.getAttribute('href');
+                var bodyIdx = href.indexOf('body=');
+                if (bodyIdx < 0) return;
+                var body = decodeURIComponent(href.substring(bodyIdx + 5));
+                var lines = body.split('\\n');
+
+                var notamId = '';
+                var notamStartIdx = 0;
+                for (var i = 0; i < lines.length; i++) {
+                    var m = lines[i].trim().match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
+                    if (m) { notamId = m[1]; notamStartIdx = i; break; }
+                }
+                if (!notamId) return;
+
+                var parent = link.closest('table');
+                var expLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
+                var location = '';
+                if (expLink) {
+                    var lm = expLink.getAttribute('href').match(/ocultarMensaje\\('([A-Z]{3,4})/);
+                    if (lm) location = lm[1];
+                }
+
+                var pubDate = '';
+                if (location && notamId) {
+                    var dateEl = document.getElementById(location + notamId + '-1');
+                    if (dateEl) {
+                        var dm = dateEl.textContent.match(/(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})/);
+                        if (dm) pubDate = dm[1];
+                    }
+                }
+
+                var remaining = lines.slice(notamStartIdx + 1).join('\\n').trim();
+                var qMatch = remaining.match(/Q\\)\\s*(.+)/);
+                var qLine = qMatch ? qMatch[1].trim() : '';
+                var remaining2 = remaining;
+                if (qMatch) {
+                    var qi = remaining2.indexOf('Q)');
+                    if (qi >= 0) remaining2 = remaining2.substring(qi + qMatch[0].length);
+                }
+                var detailMatches = remaining2.match(/[A-F]\\)[\\s\\S]*/);
+                var details = detailMatches ? detailMatches[0].trim() : '';
+                var typeMatch = lines[notamStartIdx].match(/(NOTAM[NRC])/);
+                var type = typeMatch ? typeMatch[1] : '';
+
+                results.push({
+                    id: notamId,
+                    type: type,
+                    location: location,
+                    raw_text: (pubDate ? pubDate + '\\n' : '') + body.replace(/\\n/g, '\\r\\n'),
+                    q_line: qLine,
+                    details: details.replace(/\\n/g, '\\r\\n')
+                });
+            });
+            return results;
+        }""")
+
+        browser.close()
+
+    print(f"[scraper] {len(notams)} NOTAMs extraídos")
+
+    result_data = {
+        "territory": "PERU",
+        "fir": "SPIM",
+        "total_count": len(notams),
+        "serie_a_count": sum(1 for n in notams if n["id"][0] == "A"),
+        "serie_c_count": sum(1 for n in notams if n["id"][0] == "C"),
+        "notam_n_count": sum(1 for n in notams if n["type"] == "NOTAMN"),
+        "notam_r_count": sum(1 for n in notams if n["type"] == "NOTAMR"),
+        "source": "CORPAC S.A.",
+        "source_url": DIST_URL,
+        "extraction_date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "notams": notams,
+    }
+
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(result_data, f, indent=2, ensure_ascii=False)
+
+    return result_data
+
+
+# ---------------------------------------------------------------------------
+# Auto-refresh background task
+# ---------------------------------------------------------------------------
+_last_refresh: Optional[str] = None
+_refresh_count: int = 0
+_refresh_running: bool = False
+
+
+async def _auto_refresh_loop():
+    global _last_refresh, _refresh_count, _refresh_running
+    while True:
+        await asyncio.sleep(REFRESH_INTERVAL)
+        _refresh_running = True
+        try:
+            await asyncio.get_event_loop().run_in_executor(None, run_scraper)
+            data = get_cached_notams()
+            if data.get("notams"):
+                vivos = _filter_expired(data["notams"])
+                data["notams"] = vivos
+                data["total_count"] = len(vivos)
+                data["serie_a_count"] = sum(1 for n in vivos if n["id"][0] == "A")
+                data["serie_c_count"] = sum(1 for n in vivos if n["id"][0] == "C")
+                with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+            _last_refresh = datetime.now().isoformat()
+            _refresh_count += 1
+            print(f"[auto] Refresh #{_refresh_count} — {len(data.get('notams', []))} NOTAMs vivos")
+        except Exception as e:
+            print(f"[auto] Error: {e}")
+        finally:
+            _refresh_running = False
+
+
+@app.on_event("startup")
+async def startup():
+    global _refresh_task
+    if os.path.exists(CACHE_FILE):
+        data = get_cached_notams()
+        if data.get("notams"):
+            vivos = _filter_expired(data["notams"])
+            if len(vivos) != len(data["notams"]):
+                data["notams"] = vivos
+                data["total_count"] = len(vivos)
+                with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+    _refresh_task = asyncio.create_task(_auto_refresh_loop())
+    print(f"[api] Auto-refresh cada {REFRESH_INTERVAL}s")
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """Serve the NOTAM Alarm app"""
-    # Check static/ directory first (deployed), then parent notam_alarm/ (local)
-    html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    if not os.path.exists(html_path):
-        html_path = os.path.join(os.path.dirname(__file__), '..', 'notam_alarm', 'index.html')
-    if os.path.exists(html_path):
-        with open(html_path, 'r', encoding='utf-8') as f:
-            return HTMLResponse(content=f.read())
-    return {"api": "NOTAM FIR SPIM API", "version": "2.0.0", "note": "HTML app not found"}
+    data = get_cached_notams()
+    items = _to_api_items(data)
+    return NotamResponse(
+        fir=data.get("fir", "SPIM"),
+        total_count=len(items),
+        last_updated=data.get("extraction_date", "N/A"),
+        source=data.get("source", "CORPAC S.A."),
+        notams=[NotamItem(**i) for i in items],
+    )
+
 
 @app.get("/notams", response_model=NotamResponse)
 async def get_all_notams():
-    """Get all NOTAMs for FIR SPIM"""
-    data = get_notam_data()
-    
+    data = get_cached_notams()
     if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    notams = data["notams"]
-    
+        raise HTTPException(404, "No hay NOTAMs")
+    items = _to_api_items(data)
     return NotamResponse(
         fir=data["fir"],
-        total_count=len(notams),
+        total_count=len(items),
         last_updated=data.get("extraction_date", "Unknown"),
         source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**n) for n in notams]
+        notams=[NotamItem(**i) for i in items],
     )
+
 
 @app.get("/notams/raw")
 async def get_raw_notams():
-    """Get raw NOTAM text"""
-    data = get_notam_data()
-    
+    data = get_cached_notams()
     if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    raw_texts = [n.get("raw_text", "") for n in data["notams"]]
-    
+        raise HTTPException(404, "No hay NOTAMs")
     return {
         "fir": data["fir"],
-        "total_count": len(raw_texts),
+        "total_count": len(data["notams"]),
         "last_updated": data.get("extraction_date", "Unknown"),
-        "source": data.get("source", "CORPAC S.A."),
-        "raw_notams": raw_texts
+        "raw_notams": [n.get("raw_text", "") for n in data["notams"]],
     }
+
 
 @app.get("/notams/type/{notam_type}")
 async def get_notams_by_type(notam_type: str):
-    """Get NOTAMs by type (NOTAMN, NOTAMR, NOTAMC)"""
-    data = get_notam_data()
-    
+    data = get_cached_notams()
     if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    notam_type = notam_type.upper()
-    filtered = [n for n in data["notams"] if n.get("type", "").upper() == notam_type]
-    
+        raise HTTPException(404, "No hay NOTAMs")
+    nt = notam_type.upper()
+    items = [i for i in _to_api_items(data) if i["type"].upper() == nt]
     return NotamResponse(
         fir=data["fir"],
-        total_count=len(filtered),
+        total_count=len(items),
         last_updated=data.get("extraction_date", "Unknown"),
         source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**n) for n in filtered]
+        notams=[NotamItem(**i) for i in items],
     )
+
 
 @app.get("/notams/serie/{serie}")
 async def get_notams_by_serie(serie: str):
-    """Get NOTAMs by serie (A or C)"""
-    data = get_notam_data()
-    
+    data = get_cached_notams()
     if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    serie = serie.upper()
-    filtered = [n for n in data["notams"] if n.get("series", "").upper() == serie]
-    
+        raise HTTPException(404, "No hay NOTAMs")
+    s = serie.upper()
+    items = [i for i in _to_api_items(data) if i["series"] == s]
     return NotamResponse(
         fir=data["fir"],
-        total_count=len(filtered),
+        total_count=len(items),
         last_updated=data.get("extraction_date", "Unknown"),
         source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**n) for n in filtered]
+        notams=[NotamItem(**i) for i in items],
     )
+
 
 @app.get("/notams/{notam_id:path}")
 async def get_notam_by_id(notam_id: str):
-    """Get specific NOTAM by ID (e.g., A4005/25 or A4005-25)"""
-    data = get_notam_data()
-    
+    data = get_cached_notams()
     if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    # Normalize the ID - handle both / and - separators
-    notam_id = notam_id.upper().replace("-", "/")
-    
-    for notam in data["notams"]:
-        if notam.get("id", "").upper() == notam_id:
-            return NotamItem(**notam)
-    
-    raise HTTPException(status_code=404, detail=f"NOTAM {notam_id} not found")
+        raise HTTPException(404, "No hay NOTAMs")
+    nid = notam_id.upper().replace("-", "/")
+    for item in _to_api_items(data):
+        if item["id"].upper() == nid:
+            return NotamItem(**item)
+    raise HTTPException(404, f"NOTAM {nid} no encontrado")
 
-@app.get("/notams/fir/{fir_code}")
-async def get_notams_by_fir(fir_code: str):
-    """Get NOTAMs for a specific FIR code"""
-    data = get_notam_data()
-    
-    if not data.get("notams"):
-        raise HTTPException(status_code=404, detail="No NOTAMs found")
-    
-    fir_code = fir_code.upper()
-    
-    filtered_notams = [
-        n for n in data["notams"] 
-        if fir_code in n.get("q_line", "").upper() or
-           fir_code in n.get("location", "").upper() or
-           fir_code in n.get("raw_text", "").upper()
-    ]
-    
-    return NotamResponse(
-        fir=fir_code,
-        total_count=len(filtered_notams),
-        last_updated=data.get("extraction_date", "Unknown"),
-        source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**n) for n in filtered_notams]
-    )
 
 @app.post("/refresh")
 async def refresh_notams():
-    """Refresh NOTAM data by running the CORPAC scraper"""
+    global _last_refresh, _refresh_count, _refresh_running
+    _refresh_running = True
     try:
-        import subprocess
-        scraper_path = os.path.join(os.path.dirname(__file__), '..', 'notam_dist_v6.py')
-        
-        if not os.path.exists(scraper_path):
-            raise HTTPException(status_code=500, detail="Scraper script not found")
-        
-        result = subprocess.run(
-            ['python', scraper_path],
-            capture_output=True, text=True, timeout=120
-        )
-        
-        if result.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"Scraper failed: {result.stderr[:500]}")
-        
-        # Reload the cache
-        data = get_notam_data()
-        
+        await asyncio.get_event_loop().run_in_executor(None, run_scraper)
+        data = get_cached_notams()
+        if data.get("notams"):
+            vivos = _filter_expired(data["notams"])
+            data["notams"] = vivos
+            data["total_count"] = len(vivos)
+            with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        _last_refresh = datetime.now().isoformat()
+        _refresh_count += 1
         return {
             "status": "success",
-            "message": f"Refreshed {len(data.get('notams', []))} NOTAMs from CORPAC",
-            "last_updated": data.get("extraction_date", datetime.now().isoformat()),
-            "source": "CORPAC S.A. - NOTAM Distribucion"
+            "message": f"{len(data.get('notams', []))} NOTAMs vivos",
+            "last_updated": _last_refresh,
         }
-            
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=500, detail="Scraper timed out")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(500, f"Error: {e}")
+    finally:
+        _refresh_running = False
+
+
+@app.get("/status")
+async def get_status():
+    data = get_cached_notams()
+    return {
+        "auto_refresh": {
+            "enabled": True,
+            "interval_seconds": REFRESH_INTERVAL,
+            "last_refresh": _last_refresh,
+            "total_refreshes": _refresh_count,
+            "currently_running": _refresh_running,
+        },
+        "cache": {
+            "total_notams": len(data.get("notams", [])),
+            "last_updated": data.get("extraction_date"),
+            "fir": data.get("fir", "SPIM"),
+        },
+    }
+
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint"""
+async def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
