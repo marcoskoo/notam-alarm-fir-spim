@@ -15,7 +15,8 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # ---------------------------------------------------------------------------
@@ -326,10 +327,22 @@ async def startup():
 
 
 # ---------------------------------------------------------------------------
+# Static files
+# ---------------------------------------------------------------------------
+STATIC_DIR = os.path.join(APP_DIR, "static")
+if os.path.isdir(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    # Fallback: API info page
     html = """<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><title>NOTAM FIR SPIM API</title>
