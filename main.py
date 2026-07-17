@@ -128,7 +128,7 @@ def _parse_expiry(date_str: str) -> Optional[datetime]:
     if not date_str or "PERM" in date_str.upper():
         return None
     try:
-        return datetime.strptime(date_str.strip()[:10], "%d%m%Y%H%M").replace(tzinfo=timezone.utc)
+        return datetime.strptime(date_str.strip()[:10], "%y%m%d%H%M").replace(tzinfo=timezone.utc)
     except (ValueError, IndexError):
         return None
 
@@ -473,18 +473,20 @@ async def upload_notams(payload: dict, x_secret: str = Header(None)):
     if not notams:
         raise HTTPException(400, "No se enviaron NOTAMs")
 
-    # Guardar (CORPAC ya filtra Vigentes, no filtrar de nuevo)
+    # Filtrar NOTAMs expirados (formato YYMMDDHHMM en campo C)
+    vivos = _filter_expired(notams)
+
     data = {
         "territory": "PERU",
         "fir": "SPIM",
-        "total_count": len(notams),
-        "serie_a_count": sum(1 for n in notams if n.get("id", "A")[0] == "A"),
-        "serie_c_count": sum(1 for n in notams if n.get("id", "C")[0] == "C"),
-        "notam_n_count": sum(1 for n in notams if n.get("type") == "NOTAMN"),
-        "notam_r_count": sum(1 for n in notams if n.get("type") == "NOTAMR"),
+        "total_count": len(vivos),
+        "serie_a_count": sum(1 for n in vivos if n.get("id", "A")[0] == "A"),
+        "serie_c_count": sum(1 for n in vivos if n.get("id", "C")[0] == "C"),
+        "notam_n_count": sum(1 for n in vivos if n.get("type") == "NOTAMN"),
+        "notam_r_count": sum(1 for n in vivos if n.get("type") == "NOTAMR"),
         "source": "CORPAC S.A.",
         "extraction_date": payload.get("extraction_date", datetime.now().isoformat()),
-        "notams": notams,
+        "notams": vivos,
     }
 
     with open(CACHE_FILE, "w", encoding="utf-8") as f:

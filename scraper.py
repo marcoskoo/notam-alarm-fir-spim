@@ -52,7 +52,7 @@ def parse_expiry(date_str: str):
     if not date_str or "PERM" in date_str.upper():
         return None
     try:
-        return datetime.strptime(date_str.strip()[:10], "%d%m%Y%H%M").replace(tzinfo=timezone.utc)
+        return datetime.strptime(date_str.strip()[:10], "%y%m%d%H%M").replace(tzinfo=timezone.utc)
     except (ValueError, IndexError):
         return None
 
