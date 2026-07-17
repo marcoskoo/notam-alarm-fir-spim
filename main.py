@@ -328,15 +328,30 @@ async def startup():
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    data = get_cached_notams()
-    items = _to_api_items(data)
-    return NotamResponse(
-        fir=data.get("fir", "SPIM"),
-        total_count=len(items),
-        last_updated=data.get("extraction_date", "N/A"),
-        source=data.get("source", "CORPAC S.A."),
-        notams=[NotamItem(**i) for i in items],
-    )
+    html = """<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>NOTAM FIR SPIM API</title>
+<style>
+body{font-family:system-ui;max-width:700px;margin:40px auto;padding:0 20px;color:#222}
+h1{color:#1a5276}a{color:#2e86c1}code{background:#f4f4f4;padding:2px 6px;border-radius:3px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px;text-align:left}
+th{background:#1a5276;color:white}tr:nth-child(even){background:#f9f9f9}
+</style></head>
+<body>
+<h1>NOTAM FIR SPIM API v2.0</h1>
+<p>Fuente: <strong>CORPAC S.A.</strong> | FIR: <strong>SPIM</strong></p>
+<p>Auto-refresh: cada 60 segundos | Limpieza automática de NOTAMs expirados</p>
+<h2>Endpoints</h2>
+<table>
+<tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr>
+<tr><td>GET</td><td><a href="/notams">/notams</a></td><td>Todos los NOTAMs</td></tr>
+<tr><td>GET</td><td><a href="/notams/raw">/notams/raw</a></td><td>Texto crudo</td></tr>
+<tr><td>GET</td><td><a href="/status">/status</a></td><td>Estado del auto-refresh</td></tr>
+<tr><td>GET</td><td><a href="/health">/health</a></td><td>Health check</td></tr>
+<tr><td>GET</td><td><a href="/docs">/docs</a></td><td>Swagger UI</td></tr>
+</table>
+</body></html>"""
+    return HTMLResponse(content=html)
 
 
 @app.get("/notams", response_model=NotamResponse)
