@@ -8,7 +8,7 @@
   "notam_r_count": 28,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-17 13:44:24",
+  "extraction_date": "2026-07-17 13:48:07",
   "search_path": "Modulos/NOTAM/CONSULTAS/NOTAM Distribucion",
   "search_params": {
     "pais": "PERU",
