@@ -13,7 +13,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -463,16 +463,14 @@ async def health():
 
 
 @app.post("/upload")
-async def upload_notams(payload: dict, x_secret: Optional[str] = None):
+async def upload_notams(payload: dict, x_secret: str = Header(None)):
     """
     Sube NOTAMs nuevos desde el scraper local.
     El scraper corre en la red de CORPAC (Perú) y sube los datos aquí.
     """
-    from fastapi import Header
-    secret = x_secret
-    if not secret:
+    if not x_secret:
         raise HTTPException(401, "Falta header X-Secret")
-    if secret != UPLOAD_SECRET:
+    if x_secret != UPLOAD_SECRET:
         raise HTTPException(403, "Secret incorrecto")
 
     notams = payload.get("notams", [])
