@@ -2228,9 +2228,9 @@ var ALL_FIR_SPIM = [
   'SPLX','SPLH','SPLA','SPIN'
 ];
 
-function fetchFirCompleta(){
+function fetchFirCompleta(esAutoRefresh){
   /* Buscar todos los aeródromos FIR SPIM de una vez */
-  fetchConCodigos(ALL_FIR_SPIM, true);
+  fetchConCodigos(ALL_FIR_SPIM, true, !!esAutoRefresh);
 }
 
 function fetchSeleccionados(){
@@ -2318,7 +2318,7 @@ function fetchLaminarAero(codes, onSuccess, onError){
 }
 
 /* Función principal de búsqueda */
-function fetchConCodigos(codes, esFirCompleta){
+function fetchConCodigos(codes, esFirCompleta, esAutoRefresh){
   if(!codes.length) return;
   var allBtn=document.querySelector('.btn-fetch-all');
   var selBtn=document.getElementById('btnFetch');
@@ -2335,6 +2335,11 @@ function fetchConCodigos(codes, esFirCompleta){
       setFetchStatus('ℹ️ Sin NOTAMs activos ('+fuente+')','');
       return;
     }
+
+    if(esAutoRefresh){
+      notams = [];
+    }
+
     var r=procesarCorpacItems(items);
     if(r.added>0){
       sortNotams();
@@ -2487,7 +2492,7 @@ function toggleAutoRefresh(){
   if(on){
     nextRefreshSecs=60;
     autoRefreshTimer=setInterval(function(){
-      fetchFirCompleta(); nextRefreshSecs=60;
+      fetchFirCompleta(true); nextRefreshSecs=60;
     },60000);
     nextRefreshTick=setInterval(function(){
       nextRefreshSecs--;
@@ -2549,7 +2554,7 @@ setTimeout(function(){
 /* Búsqueda automática al cargar la página */
 setTimeout(function(){
   setFetchStatus('<span class="spin">⟳</span> Buscando NOTAMs FIR SPIM al inicio...','fetch-info');
-  fetchFirCompleta();
+  fetchFirCompleta(false);
 }, 1200);
 
 /* Activar auto-refresh por defecto */
