@@ -1,6 +1,7 @@
 """
 NOTAM CORPAC Scraper — FIR SPIM
 Extrae NOTAMs vigentes y limpia expirados automáticamente.
+Opcionalmente sube los datos a un servidor remoto (Railway).
 """
 
 import os
@@ -8,6 +9,7 @@ import re
 import sys
 import json
 import time
+import urllib.request
 from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
 
@@ -19,6 +21,10 @@ CORPAC_USER = os.environ.get("CORPAC_USER", "aissphi")
 CORPAC_PASS = os.environ.get("CORPAC_PASS", "corpac")
 LOGIN_URL = "https://appoperacional.corpac.gob.pe/NOTAM/newlog.php"
 DIST_URL = "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action="
+
+# Servidor remoto (Railway)
+REMOTE_URL = os.environ.get("NOTAM_API_URL", "https://notam-alarm-spim-production.up.railway.app")
+UPLOAD_SECRET = os.environ.get("UPLOAD_SECRET", "notam-spim-2026")
 
 
 def parse_notam_fields(details: str) -> dict:
@@ -193,5 +199,39 @@ def run_scraper(headless: bool = True) -> dict:
     return result_data
 
 
+def upload_to_server(data: dict):
+    """Sube los NOTAMs al servidor Railway vía POST /upload."""
+    url = f"{REMOTE_URL}/upload"
+    payload = json.dumps({
+        "notams": data.get("notams", []),
+        "extraction_date": data.get("extraction_date", time.strftime("%Y-%m-%d %H:%M:%S")),
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "X-Secret": UPLOAD_SECRET,
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            print(f"[upload] OK — {result.get('total_received', '?')} recibidos, {result.get('total_alive', '?')} vivos")
+            return result
+    except Exception as e:
+        print(f"[upload] Error: {e}")
+        return None
+
+
 if __name__ == "__main__":
-    run_scraper(headless="--show" not in sys.argv)
+    upload = "--upload" in sys.argv
+    headless = "--show" not in sys.argv
+
+    data = run_scraper(headless=headless)
+
+    if upload:
+        print("\n[scraper] Subiendo a servidor remoto...")
+        upload_to_server(data)

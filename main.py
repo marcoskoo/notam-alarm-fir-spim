@@ -27,6 +27,7 @@ CACHE_FILE = os.path.join(DATA_DIR, "notam_cache.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 REFRESH_INTERVAL = int(os.environ.get("REFRESH_INTERVAL", "60"))
+UPLOAD_SECRET = os.environ.get("UPLOAD_SECRET", "notam-spim-2026")
 
 # ---------------------------------------------------------------------------
 # FastAPI
@@ -283,24 +284,25 @@ _refresh_running: bool = False
 
 
 async def _auto_refresh_loop():
+    """Limpia NOTAMs expirados cada N segundos. El scraper corre local."""
     global _last_refresh, _refresh_count, _refresh_running
     while True:
         await asyncio.sleep(REFRESH_INTERVAL)
         _refresh_running = True
         try:
-            await asyncio.get_event_loop().run_in_executor(None, run_scraper)
             data = get_cached_notams()
             if data.get("notams"):
                 vivos = _filter_expired(data["notams"])
-                data["notams"] = vivos
-                data["total_count"] = len(vivos)
-                data["serie_a_count"] = sum(1 for n in vivos if n["id"][0] == "A")
-                data["serie_c_count"] = sum(1 for n in vivos if n["id"][0] == "C")
-                with open(CACHE_FILE, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2, ensure_ascii=False)
+                if len(vivos) != len(data["notams"]):
+                    data["notams"] = vivos
+                    data["total_count"] = len(vivos)
+                    data["serie_a_count"] = sum(1 for n in vivos if n["id"][0] == "A")
+                    data["serie_c_count"] = sum(1 for n in vivos if n["id"][0] == "C")
+                    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2, ensure_ascii=False)
+                    print(f"[auto] Expirados limpiados — {len(vivos)} vivos")
             _last_refresh = datetime.now().isoformat()
             _refresh_count += 1
-            print(f"[auto] Refresh #{_refresh_count} — {len(data.get('notams', []))} NOTAMs vivos")
         except Exception as e:
             print(f"[auto] Error: {e}")
         finally:
@@ -428,28 +430,12 @@ async def get_notam_by_id(notam_id: str):
 
 @app.post("/refresh")
 async def refresh_notams():
-    global _last_refresh, _refresh_count, _refresh_running
-    _refresh_running = True
-    try:
-        await asyncio.get_event_loop().run_in_executor(None, run_scraper)
-        data = get_cached_notams()
-        if data.get("notams"):
-            vivos = _filter_expired(data["notams"])
-            data["notams"] = vivos
-            data["total_count"] = len(vivos)
-            with open(CACHE_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-        _last_refresh = datetime.now().isoformat()
-        _refresh_count += 1
-        return {
-            "status": "success",
-            "message": f"{len(data.get('notams', []))} NOTAMs vivos",
-            "last_updated": _last_refresh,
-        }
-    except Exception as e:
-        raise HTTPException(500, f"Error: {e}")
-    finally:
-        _refresh_running = False
+    """Refresca datos — el scraper debe correr local y subir vía POST /upload"""
+    return {
+        "status": "info",
+        "message": "El scraper corre en la red de CORPAC (Perú). Ejecuta localmente: python scraper.py --upload",
+        "upload_endpoint": "/upload",
+    }
 
 
 @app.get("/status")
@@ -474,3 +460,57 @@ async def get_status():
 @app.get("/health")
 async def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+
+@app.post("/upload")
+async def upload_notams(payload: dict, x_secret: Optional[str] = None):
+    """
+    Sube NOTAMs nuevos desde el scraper local.
+    El scraper corre en la red de CORPAC (Perú) y sube los datos aquí.
+    """
+    from fastapi import Header
+    secret = x_secret
+    if not secret:
+        raise HTTPException(401, "Falta header X-Secret")
+    if secret != UPLOAD_SECRET:
+        raise HTTPException(403, "Secret incorrecto")
+
+    notams = payload.get("notams", [])
+    if not notams:
+        raise HTTPException(400, "No se enviaron NOTAMs")
+
+    # Guardar
+    data = {
+        "territory": "PERU",
+        "fir": "SPIM",
+        "total_count": len(notams),
+        "serie_a_count": sum(1 for n in notams if n.get("id", "A")[0] == "A"),
+        "serie_c_count": sum(1 for n in notams if n.get("id", "C")[0] == "C"),
+        "notam_n_count": sum(1 for n in notams if n.get("type") == "NOTAMN"),
+        "notam_r_count": sum(1 for n in notams if n.get("type") == "NOTAMR"),
+        "source": "CORPAC S.A.",
+        "extraction_date": payload.get("extraction_date", datetime.now().isoformat()),
+        "notams": notams,
+    }
+
+    # Filtrar expirados
+    vivos = _filter_expired(notams)
+    data["notams"] = vivos
+    data["total_count"] = len(vivos)
+
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    global _last_refresh, _refresh_count
+    _last_refresh = datetime.now().isoformat()
+    _refresh_count += 1
+
+    print(f"[upload] {len(notams)} recibidos, {len(vivos)} vivos guardados")
+
+    return {
+        "status": "success",
+        "total_received": len(notams),
+        "total_alive": len(vivos),
+        "eliminated": len(notams) - len(vivos),
+        "last_updated": _last_refresh,
+    }
