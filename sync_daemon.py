@@ -1,17 +1,20 @@
 """
-NOTAM Sync Daemon — nunca falla.
-- Scraping cada 60s con retry
-- Si el proceso muere, se reinicia solo
+NOTAM Sync Daemon — proceso auto-renacente.
+- Scraping cada 60s con retry interno
+- Si el loop muere (excepcion no capturada), se reinicia automaticamente
 - Logging a archivo
+- VBS en Startup lo arranca al login
 """
 
 import os
 import sys
 import time
 import json
+import signal
 import urllib.request
 import logging
 import traceback
+import subprocess
 
 LOG_FILE = os.path.join(os.environ.get("TEMP", "."), "notam_sync.log")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +35,19 @@ log.addHandler(console)
 from scraper import run_scraper, upload_to_server
 
 INTERVAL = int(os.environ.get("SYNC_INTERVAL", "60"))
-MAX_SCRAPER_RETRIES = 3
+MAX_RESTART_DELAY = 300
+
+
+def _kill_chromium():
+    """Mata procesos Chromium zombie que Playwright dejo."""
+    try:
+        if sys.platform == "win32":
+            subprocess.run(
+                ["taskkill", "/F", "/IM", "chromium.exe"],
+                capture_output=True, timeout=5,
+            )
+    except Exception:
+        pass
 
 
 def sync_cycle():
@@ -51,32 +66,47 @@ def sync_cycle():
     except Exception as e:
         log.error("Error en ciclo: %s", e)
         log.error(traceback.format_exc())
+        _kill_chromium()
         return False
 
 
 def sync_loop():
-    """Loop infinito con auto-restart."""
+    """Loop principal: scrape cada 60s, auto-restart si algo explota."""
     consecutive_failures = 0
 
     while True:
-        success = sync_cycle()
+        try:
+            success = sync_cycle()
 
-        if success:
-            consecutive_failures = 0
-        else:
+            if success:
+                consecutive_failures = 0
+            else:
+                consecutive_failures += 1
+                wait = min(30, 10 * consecutive_failures)
+                log.warning("Fallos consecutivos: %d — esperando %ds", consecutive_failures, wait)
+                time.sleep(wait)
+                continue
+
+            log.info("Proximo sync en %ds...", INTERVAL)
+            time.sleep(INTERVAL)
+
+        except KeyboardInterrupt:
+            log.info("Interrupcion manual. Saliendo.")
+            break
+        except Exception as e:
+            log.error("Excepcion no capturada en loop: %s", e)
+            log.error(traceback.format_exc())
+            _kill_chromium()
             consecutive_failures += 1
-            wait = min(30, 10 * consecutive_failures)
-            log.warning("Fallos consecutivos: %d — esperando %ds", consecutive_failures, wait)
+            wait = min(MAX_RESTART_DELAY, 10 * consecutive_failures)
+            log.warning("Reintentando en %ds...", wait)
             time.sleep(wait)
-            continue
-
-        log.info("Proximo sync en %ds...", INTERVAL)
-        time.sleep(INTERVAL)
 
 
-if __name__ == "__main__":
+def watchdog_loop():
+    """Auto-restart: si sync_loop() muere, lo reinicia."""
     log.info("=" * 50)
-    log.info("NOTAM Sync Daemon iniciado")
+    log.info("NOTAM Daemon (watchdog integrado) iniciado")
     log.info("Intervalo: %ds", INTERVAL)
     log.info("Servidores: %s", ", ".join([
         "https://notam-alarm1.up.railway.app",
@@ -84,4 +114,28 @@ if __name__ == "__main__":
     ]))
     log.info("=" * 50)
 
-    sync_loop()
+    restart_count = 0
+
+    while True:
+        try:
+            restart_count += 1
+            if restart_count > 1:
+                delay = min(MAX_RESTART_DELAY, 10 * restart_count)
+                log.info("Daemon reiniciado (#%d). Esperando %ds...", restart_count, delay)
+                time.sleep(delay)
+
+            sync_loop()
+            log.info("Loop terminado inesperadamente. Reiniciando...")
+
+        except KeyboardInterrupt:
+            log.info("Saliendo.")
+            break
+        except Exception as e:
+            log.error("Watchdog error: %s", e)
+            log.error(traceback.format_exc())
+            _kill_chromium()
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    watchdog_loop()

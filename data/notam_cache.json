@@ -1,14 +1,14 @@
 {
   "territory": "PERU",
   "fir": "SPIM",
-  "total_count": 142,
+  "total_count": 141,
   "serie_a_count": 54,
-  "serie_c_count": 88,
-  "notam_n_count": 96,
+  "serie_c_count": 87,
+  "notam_n_count": 95,
   "notam_r_count": 46,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-18 07:31:29",
+  "extraction_date": "2026-07-18 07:50:02",
   "notams": [
     {
       "id": "C4129/24",
@@ -369,14 +369,6 @@
       "raw_text": "14/07/2026 17:53:00\nC2394/26 NOTAMN  | \r\nQ)SPIM/QOBXX/IV/NBO/A/000/999/\r\nA) SPJJ\r\nB) 2607141745\r\nC) 2607312300 EST\r\nE) OBST ARBOLES DE 20M HGT A 400M FM THR RWY 31, PILOTOS CTN LDG/TKOF Y CTC JAUJA INFO DE AD",
       "q_line": "SPIM/QOBXX/IV/NBO/A/000/999/",
       "details": "A) SPJJ\r\nB) 2607141745\r\nC) 2607312300 EST\r\nE) OBST ARBOLES DE 20M HGT A 400M FM THR RWY 31, PILOTOS CTN LDG/TKOF Y CTC JAUJA INFO DE AD"
-    },
-    {
-      "id": "C2434/26",
-      "type": "NOTAMN",
-      "location": "SPJJ",
-      "raw_text": "18/07/2026 11:36:00\nC2434/26 NOTAMN  | \r\nQ)SPIM/QMNLC/IV/NBO/A/000/999/\r\nA) SPJJ\r\nB) 2607181134\r\nC) 2607181235\r\nE) APN CLSD DEBIDO A MAX CAPACIDAD",
-      "q_line": "SPIM/QMNLC/IV/NBO/A/000/999/",
-      "details": "A) SPJJ\r\nB) 2607181134\r\nC) 2607181235\r\nE) APN CLSD DEBIDO A MAX CAPACIDAD"
     },
     {
       "id": "A1638/25",
