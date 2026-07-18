@@ -1,6 +1,6 @@
 """
 NOTAM Sync Daemon — proceso auto-renacente.
-- Ejecuta scraper como SUBPROCESS con taskkill /T para matar arbol completo
+- Ejecuta scraper como SUBPROCESS con kill forzado por timer
 - Si el subprocess muere, lo reinicia con backoff
 - VBS en Startup lo arranca al login
 """
@@ -8,6 +8,8 @@ NOTAM Sync Daemon — proceso auto-renacente.
 import os
 import sys
 import time
+import signal
+import threading
 import subprocess
 import logging
 
@@ -27,71 +29,73 @@ MAX_DELAY = 300
 SCRAPER_TIMEOUT = 90
 
 
-def _kill_tree(pid):
-    """Mata un proceso y todos sus hijos (chromium, etc)."""
+def _force_kill_pid(pid):
+    """Mata un PID y sus hijos de forma agresiva."""
     try:
-        if sys.platform == "win32":
-            subprocess.run(
-                ["taskkill", "/F", "/T", "/PID", str(pid)],
-                capture_output=True, timeout=10,
-                creationflags=0x08000000,
-            )
-        else:
-            import os, signal
-            os.killpg(os.getpgid(pid), signal.SIGKILL)
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)],
+            capture_output=True, timeout=10,
+            creationflags=0x08000000,
+        )
     except Exception:
         pass
 
 
 def _kill_chromium():
     try:
-        if sys.platform == "win32":
-            subprocess.run(
-                ["taskkill", "/F", "/IM", "chromium.exe"],
-                capture_output=True, timeout=5,
-                creationflags=0x08000000,
-            )
+        subprocess.run(
+            ["taskkill", "/F", "/IM", "chromium.exe"],
+            capture_output=True, timeout=5,
+            creationflags=0x08000000,
+        )
     except Exception:
         pass
 
 
 def run_scraper_subprocess():
-    """Ejecuta scraper.py como subprocess aislado."""
+    """Ejecuta scraper.py como subprocess con kill forzado por timer."""
     log.info("Ejecutando scraper...")
-    proc = None
-    try:
-        proc = subprocess.Popen(
-            [sys.executable, SCRAPER],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            creationflags=0x08000000,
-            cwd=SCRIPT_DIR,
-        )
-        try:
-            stdout, _ = proc.communicate(timeout=SCRAPER_TIMEOUT)
-        except subprocess.TimeoutExpired:
-            log.error("Scraper tardo %ds — matando arbol de procesos PID %d", SCRAPER_TIMEOUT, proc.pid)
-            _kill_tree(proc.pid)
-            _kill_chromium()
-            return False
 
-        if stdout:
-            for line in stdout.strip().split("\n"):
-                if line.strip():
-                    log.info("[scraper] %s", line.strip())
+    proc = subprocess.Popen(
+        [sys.executable, SCRAPER],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        creationflags=0x08000000,
+        cwd=SCRIPT_DIR,
+    )
 
-        if proc.returncode != 0:
-            log.error("Scraper fallo con exit code %d", proc.returncode)
-            return False
-        return True
+    killed = threading.Event()
 
-    except Exception as e:
-        log.error("Error ejecutando scraper: %s", e)
-        if proc and proc.poll() is None:
-            _kill_tree(proc.pid)
+    def timeout_kill():
+        log.error("Scraper tardo %ds — matando PID %d", SCRAPER_TIMEOUT, proc.pid)
+        killed.set()
+        _force_kill_pid(proc.pid)
         _kill_chromium()
+
+    timer = threading.Timer(SCRAPER_TIMEOUT, timeout_kill)
+    timer.daemon = True
+    timer.start()
+
+    try:
+        stdout, _ = proc.communicate()
+    except Exception:
+        pass
+    finally:
+        timer.cancel()
+
+    if killed.is_set():
         return False
+
+    if stdout:
+        for line in stdout.decode("utf-8", errors="replace").strip().split("\n"):
+            if line.strip():
+                log.info("[scraper] %s", line.strip())
+
+    if proc.returncode != 0:
+        log.error("Scraper fallo exit code %d", proc.returncode)
+        return False
+
+    return True
 
 
 def main():

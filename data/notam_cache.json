@@ -1,14 +1,14 @@
 {
   "territory": "PERU",
   "fir": "SPIM",
-  "total_count": 138,
+  "total_count": 137,
   "serie_a_count": 53,
-  "serie_c_count": 85,
-  "notam_n_count": 92,
+  "serie_c_count": 84,
+  "notam_n_count": 91,
   "notam_r_count": 46,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-18 12:20:09",
+  "extraction_date": "2026-07-18 12:42:56",
   "notams": [
     {
       "id": "C4129/24",
@@ -729,14 +729,6 @@
       "raw_text": "17/07/2026 21:29:00\nC2428/26 NOTAMR C2408/26 | \r\nQ)SPIM/QFFAS/IV/NBO/A/000/999/\r\nA) SPMF\r\nB) 2607172125\r\nC) 2607212300\r\nE) RFFS NO AVBL",
       "q_line": "SPIM/QFFAS/IV/NBO/A/000/999/",
       "details": "A) SPMF\r\nB) 2607172125\r\nC) 2607212300\r\nE) RFFS NO AVBL"
-    },
-    {
-      "id": "C2436/26",
-      "type": "NOTAMN",
-      "location": "SPMF",
-      "raw_text": "18/07/2026 15:08:00\nC2436/26 NOTAMN  | \r\nQ)SPIM/QMNLC/IV/NBO/A/000/999/\r\nA) SPMF\r\nB) 2607181510\r\nC) 2607181730\r\nE) APN CLSD DEBIDO MAX CAPACIDAD.PILOTOS CTC AFIS PREVIO AL VUELO",
-      "q_line": "SPIM/QMNLC/IV/NBO/A/000/999/",
-      "details": "A) SPMF\r\nB) 2607181510\r\nC) 2607181730\r\nE) APN CLSD DEBIDO MAX CAPACIDAD.PILOTOS CTC AFIS PREVIO AL VUELO"
     },
     {
       "id": "C0926/26",
