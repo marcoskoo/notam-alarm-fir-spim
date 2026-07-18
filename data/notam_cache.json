@@ -8,7 +8,7 @@
   "notam_r_count": 46,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-18 09:40:21",
+  "extraction_date": "2026-07-18 11:36:05",
   "notams": [
     {
       "id": "C4129/24",
@@ -731,6 +731,14 @@
       "details": "A) SPMF\r\nB) 2607172125\r\nC) 2607212300\r\nE) RFFS NO AVBL"
     },
     {
+      "id": "C2436/26",
+      "type": "NOTAMN",
+      "location": "SPMF",
+      "raw_text": "18/07/2026 15:08:00\nC2436/26 NOTAMN  | \r\nQ)SPIM/QMNLC/IV/NBO/A/000/999/\r\nA) SPMF\r\nB) 2607181510\r\nC) 2607181730\r\nE) APN CLSD DEBIDO MAX CAPACIDAD.PILOTOS CTC AFIS PREVIO AL VUELO",
+      "q_line": "SPIM/QMNLC/IV/NBO/A/000/999/",
+      "details": "A) SPMF\r\nB) 2607181510\r\nC) 2607181730\r\nE) APN CLSD DEBIDO MAX CAPACIDAD.PILOTOS CTC AFIS PREVIO AL VUELO"
+    },
+    {
       "id": "C0926/26",
       "type": "NOTAMN",
       "location": "SPZA",
@@ -1065,14 +1073,6 @@
       "raw_text": "08/05/2025 17:38:00\nC1740/25 NOTAMN  | \r\nQ)SPIM/QFAXX/IV/NBO/A/000/999/\r\nA) SPME\r\nB) 2505081830\r\nC)  PERM\r\nE) REF RD 321-2025-MTC/12 FECHA 25 ABR 2025 SOBRE INDICE DE CLASIFICACION DE PAVIMENTOS, DONDE DICE: RWY 32/14: PCN 47 F/C/X/T TWY: PCN 47 F/C/X/T APN: PCN 43 F/B/X/T DEBE DECIR RWY 32/14: PCR 420 F/C/X/T TWY A: PCR 420 F/C/X/T APN: PCR 440 F/C/X/T",
       "q_line": "SPIM/QFAXX/IV/NBO/A/000/999/",
       "details": "A) SPME\r\nB) 2505081830\r\nC)  PERM\r\nE) REF RD 321-2025-MTC/12 FECHA 25 ABR 2025 SOBRE INDICE DE CLASIFICACION DE PAVIMENTOS, DONDE DICE: RWY 32/14: PCN 47 F/C/X/T TWY: PCN 47 F/C/X/T APN: PCN 43 F/B/X/T DEBE DECIR RWY 32/14: PCR 420 F/C/X/T TWY A: PCR 420 F/C/X/T APN: PCR 440 F/C/X/T"
-    },
-    {
-      "id": "C2430/26",
-      "type": "NOTAMN",
-      "location": "SPME",
-      "raw_text": "18/07/2026 00:18:00\nC2430/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPME\r\nB) 2607181400\r\nC) 2607181500\r\nE) TWR/APP/AIS/ARO/RFFS AVBL O/R",
-      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
-      "details": "A) SPME\r\nB) 2607181400\r\nC) 2607181500\r\nE) TWR/APP/AIS/ARO/RFFS AVBL O/R"
     },
     {
       "id": "C1689/26",

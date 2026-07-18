@@ -279,11 +279,9 @@ def upload_to_server(data: dict):
 
 
 if __name__ == "__main__":
-    upload = "--upload" in sys.argv
     headless = "--show" not in sys.argv
 
     data = run_scraper(headless=headless)
 
-    if upload:
-        print("\[scraper] Subiendo a servidor remoto...")
-        upload_to_server(data)
+    print("[scraper] Subiendo a servidores...")
+    upload_to_server(data)
