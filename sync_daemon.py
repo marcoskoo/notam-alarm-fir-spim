@@ -1,6 +1,6 @@
 """
 NOTAM Sync Daemon — proceso auto-renacente.
-- Ejecuta scraper como SUBPROCESS para aislar crashes de Playwright
+- Ejecuta scraper como SUBPROCESS con taskkill /T para matar arbol completo
 - Si el subprocess muere, lo reinicia con backoff
 - VBS en Startup lo arranca al login
 """
@@ -24,6 +24,23 @@ log = logging.getLogger("sync")
 
 INTERVAL = int(os.environ.get("SYNC_INTERVAL", "60"))
 MAX_DELAY = 300
+SCRAPER_TIMEOUT = 90
+
+
+def _kill_tree(pid):
+    """Mata un proceso y todos sus hijos (chromium, etc)."""
+    try:
+        if sys.platform == "win32":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                capture_output=True, timeout=10,
+                creationflags=0x08000000,
+            )
+        else:
+            import os, signal
+            os.killpg(os.getpgid(pid), signal.SIGKILL)
+    except Exception:
+        pass
 
 
 def _kill_chromium():
@@ -41,30 +58,38 @@ def _kill_chromium():
 def run_scraper_subprocess():
     """Ejecuta scraper.py como subprocess aislado."""
     log.info("Ejecutando scraper...")
+    proc = None
     try:
-        result = subprocess.run(
+        proc = subprocess.Popen(
             [sys.executable, SCRAPER],
-            capture_output=True, text=True, timeout=120,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
             creationflags=0x08000000,
             cwd=SCRIPT_DIR,
         )
-        if result.stdout:
-            for line in result.stdout.strip().split("\n"):
-                if line.strip():
-                    log.info("[scraper] %s", line.strip())
-        if result.returncode != 0:
-            log.error("Scraper fallo con exit code %d", result.returncode)
-            if result.stderr:
-                log.error("stderr: %s", result.stderr[-500:])
+        try:
+            stdout, _ = proc.communicate(timeout=SCRAPER_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            log.error("Scraper tardo %ds — matando arbol de procesos PID %d", SCRAPER_TIMEOUT, proc.pid)
+            _kill_tree(proc.pid)
             _kill_chromium()
             return False
+
+        if stdout:
+            for line in stdout.strip().split("\n"):
+                if line.strip():
+                    log.info("[scraper] %s", line.strip())
+
+        if proc.returncode != 0:
+            log.error("Scraper fallo con exit code %d", proc.returncode)
+            return False
         return True
-    except subprocess.TimeoutExpired:
-        log.error("Scraper tardo mas de 120s — matando chromium")
-        _kill_chromium()
-        return False
+
     except Exception as e:
         log.error("Error ejecutando scraper: %s", e)
+        if proc and proc.poll() is None:
+            _kill_tree(proc.pid)
         _kill_chromium()
         return False
 
@@ -73,6 +98,7 @@ def main():
     log.info("=" * 50)
     log.info("NOTAM Sync Daemon iniciado")
     log.info("Intervalo: %ds", INTERVAL)
+    log.info("Timeout scraper: %ds", SCRAPER_TIMEOUT)
     log.info("=" * 50)
 
     consecutive_failures = 0
