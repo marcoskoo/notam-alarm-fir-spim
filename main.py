@@ -296,15 +296,6 @@ async def _auto_refresh_loop():
 @app.on_event("startup")
 async def startup():
     global _refresh_task
-    if os.path.exists(CACHE_FILE):
-        data = get_cached_notams()
-        if data.get("notams"):
-            vivos = _filter_expired(data["notams"])
-            if len(vivos) != len(data["notams"]):
-                data["notams"] = vivos
-                data["total_count"] = len(vivos)
-                with open(CACHE_FILE, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=2, ensure_ascii=False)
     _refresh_task = asyncio.create_task(_auto_refresh_loop())
     print(f"[api] Auto-refresh cada {REFRESH_INTERVAL}s")
 
