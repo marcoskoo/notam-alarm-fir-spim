@@ -1,14 +1,14 @@
 {
   "territory": "PERU",
   "fir": "SPIM",
-  "total_count": 141,
-  "serie_a_count": 54,
-  "serie_c_count": 87,
-  "notam_n_count": 95,
+  "total_count": 138,
+  "serie_a_count": 53,
+  "serie_c_count": 85,
+  "notam_n_count": 92,
   "notam_r_count": 46,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-18 07:50:02",
+  "extraction_date": "2026-07-18 09:40:21",
   "notams": [
     {
       "id": "C4129/24",
@@ -257,22 +257,6 @@
       "raw_text": "17/06/2024 17:27:00\nC2127/24 NOTAMN  | \r\nQ)SPIM/QFPLC/IV/BO/A/000/999/\r\nA) SPDT\r\nB) 2406171730\r\nC)  PERM\r\nE) HLP TROMPETEROS CLSD",
       "q_line": "SPIM/QFPLC/IV/BO/A/000/999/",
       "details": "A) SPDT\r\nB) 2406171730\r\nC)  PERM\r\nE) HLP TROMPETEROS CLSD"
-    },
-    {
-      "id": "C2432/26",
-      "type": "NOTAMN",
-      "location": "SPNC",
-      "raw_text": "18/07/2026 11:01:00\nC2432/26 NOTAMN  | \r\nQ)SPIM/QFMAR/IV/BO/A/000/999/\r\nA) SPNC\r\nB) 2607181100\r\nC) 2607181300\r\nE) AIS/ARO/COM/MET AVBL O/R)",
-      "q_line": "SPIM/QFMAR/IV/BO/A/000/999/",
-      "details": "A) SPNC\r\nB) 2607181100\r\nC) 2607181300\r\nE) AIS/ARO/COM/MET AVBL O/R)"
-    },
-    {
-      "id": "C2433/26",
-      "type": "NOTAMN",
-      "location": "SPNC",
-      "raw_text": "18/07/2026 11:03:00\nC2433/26 NOTAMN  | \r\nQ)SPIM/QSFAR/IV/BO/A/000/999/\r\nA) SPNC\r\nB) 2607181101\r\nC) 2607181400\r\nE) FIS/AFIS/RFFS AVBL O/R",
-      "q_line": "SPIM/QSFAR/IV/BO/A/000/999/",
-      "details": "A) SPNC\r\nB) 2607181101\r\nC) 2607181400\r\nE) FIS/AFIS/RFFS AVBL O/R"
     },
     {
       "id": "C2429/26",
@@ -985,14 +969,6 @@
       "raw_text": "21/07/2025 22:39:00\nA2276/25 NOTAMN  | \r\nQ)SPIM/QMBCH/IV/BO/A/000/999/\r\nA) SPYL\r\nB) 2507212200\r\nC)  PERM\r\nE) NEW PCR DATA IN FORCE: RWY 17/35 (0-300) PCR 550 R/D/W/T RWY 17/35 (300-2500) PCR 440 F/C/X/T TWY ALPHA PCR 530 F/D/X/T TWY BRAVO PCR 480/F/C/X/T APN PCR 560 R/C/W/T",
       "q_line": "SPIM/QMBCH/IV/BO/A/000/999/",
       "details": "A) SPYL\r\nB) 2507212200\r\nC)  PERM\r\nE) NEW PCR DATA IN FORCE: RWY 17/35 (0-300) PCR 550 R/D/W/T RWY 17/35 (300-2500) PCR 440 F/C/X/T TWY ALPHA PCR 530 F/D/X/T TWY BRAVO PCR 480/F/C/X/T APN PCR 560 R/C/W/T"
-    },
-    {
-      "id": "A2433/26",
-      "type": "NOTAMN",
-      "location": "SPYL",
-      "raw_text": "17/07/2026 16:19:00\nA2433/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPYL\r\nB) 2607172100\r\nC) 2607181300\r\nD) 17 2100-2359 18 0000-0300 1100-1300\r\nE) FIS/AFIS/ALRS/COM/MET/AIS/RFFS AVBL O/R",
-      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
-      "details": "A) SPYL\r\nB) 2607172100\r\nC) 2607181300\r\nD) 17 2100-2359 18 0000-0300 1100-1300\r\nE) FIS/AFIS/ALRS/COM/MET/AIS/RFFS AVBL O/R"
     },
     {
       "id": "C2282/26",

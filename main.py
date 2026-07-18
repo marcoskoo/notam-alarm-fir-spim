@@ -473,20 +473,19 @@ async def upload_notams(payload: dict, x_secret: str = Header(None)):
     if not notams:
         raise HTTPException(400, "No se enviaron NOTAMs")
 
-    # Filtrar NOTAMs expirados (formato YYMMDDHHMM en campo C)
-    vivos = _filter_expired(notams)
+    # El scraper ya filtra expirados localmente; aqui solo guardamos
 
     data = {
         "territory": "PERU",
         "fir": "SPIM",
-        "total_count": len(vivos),
-        "serie_a_count": sum(1 for n in vivos if n.get("id", "A")[0] == "A"),
-        "serie_c_count": sum(1 for n in vivos if n.get("id", "C")[0] == "C"),
-        "notam_n_count": sum(1 for n in vivos if n.get("type") == "NOTAMN"),
-        "notam_r_count": sum(1 for n in vivos if n.get("type") == "NOTAMR"),
+        "total_count": len(notams),
+        "serie_a_count": sum(1 for n in notams if n.get("id", "A")[0] == "A"),
+        "serie_c_count": sum(1 for n in notams if n.get("id", "C")[0] == "C"),
+        "notam_n_count": sum(1 for n in notams if n.get("type") == "NOTAMN"),
+        "notam_r_count": sum(1 for n in notams if n.get("type") == "NOTAMR"),
         "source": "CORPAC S.A.",
         "extraction_date": payload.get("extraction_date", datetime.now().isoformat()),
-        "notams": vivos,
+        "notams": notams,
     }
 
     with open(CACHE_FILE, "w", encoding="utf-8") as f:

@@ -45,6 +45,7 @@ def _kill_chromium():
             subprocess.run(
                 ["taskkill", "/F", "/IM", "chromium.exe"],
                 capture_output=True, timeout=5,
+                creationflags=0x08000000,
             )
     except Exception:
         pass
