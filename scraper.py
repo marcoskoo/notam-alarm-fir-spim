@@ -229,8 +229,6 @@ def run_scraper(headless: bool = True) -> dict:
 
     print(f"[scraper] {len(notams)} NOTAMs extraidos")
 
-    notams = filter_expired(notams)
-
     result_data = {
         "territory": "PERU",
         "fir": "SPIM",
