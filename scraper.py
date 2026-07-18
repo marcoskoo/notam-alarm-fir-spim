@@ -33,15 +33,11 @@ RETRY_DELAY = 10
 
 
 def _kill_chromium():
-    """Mata procesos Chromium zombies."""
+    """Mata SOLO procesos Chromium de Playwright (NO Chrome del usuario)."""
     try:
         if sys.platform == "win32":
             subprocess.run(
                 ["taskkill", "/F", "/IM", "chromium.exe"],
-                capture_output=True, timeout=5,
-            )
-            subprocess.run(
-                ["taskkill", "/F", "/IM", "chrome.exe"],
                 capture_output=True, timeout=5,
             )
         else:
@@ -108,6 +104,7 @@ def _scrape_once(headless: bool = True) -> list:
         with sync_playwright() as p:
             browser = p.chromium.launch(
                 headless=headless,
+                executable_path=None,
                 args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
             )
             page = browser.new_page(viewport={"width": 1280, "height": 900})
