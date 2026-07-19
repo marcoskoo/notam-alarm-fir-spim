@@ -1,14 +1,14 @@
 {
   "territory": "PERU",
   "fir": "SPIM",
-  "total_count": 137,
+  "total_count": 139,
   "serie_a_count": 53,
-  "serie_c_count": 84,
-  "notam_n_count": 91,
-  "notam_r_count": 46,
+  "serie_c_count": 86,
+  "notam_n_count": 92,
+  "notam_r_count": 47,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-18 12:42:56",
+  "extraction_date": "2026-07-19 08:04:47",
   "notams": [
     {
       "id": "C4129/24",
@@ -139,14 +139,6 @@
       "details": "A) SPHO\r\nB) 2606091133\r\nC)  PERM\r\nD) 1100-2300\r\nE) TWR HR SER"
     },
     {
-      "id": "C2389/26",
-      "type": "NOTAMN",
-      "location": "SPID",
-      "raw_text": "13/07/2026 23:28:00\nC2389/26 NOTAMN  | \r\nQ)SPIM/QRALW/IV/NBO/W/000/140/0344S07315W003\r\nA) SPID\r\nB) 2607141100\r\nC) 2607182300\r\nD) 1100-2300\r\nE) TRA DUE PASAJE AEREO SOBRE AD BERGERIE. SE REQUIERE PREVIA COOR CON IQUITOS TORRE. COORD: 034418S0731554W RDO:03NM F)GND G)FL140",
-      "q_line": "SPIM/QRALW/IV/NBO/W/000/140/0344S07315W003",
-      "details": "A) SPID\r\nB) 2607141100\r\nC) 2607182300\r\nD) 1100-2300\r\nE) TRA DUE PASAJE AEREO SOBRE AD BERGERIE. SE REQUIERE PREVIA COOR CON IQUITOS TORRE. COORD: 034418S0731554W RDO:03NM F)GND G)FL140"
-    },
-    {
       "id": "C3230/25",
       "type": "NOTAMN",
       "location": "SPBC",
@@ -259,6 +251,14 @@
       "details": "A) SPDT\r\nB) 2406171730\r\nC)  PERM\r\nE) HLP TROMPETEROS CLSD"
     },
     {
+      "id": "C2441/26",
+      "type": "NOTAMN",
+      "location": "SPNC",
+      "raw_text": "19/07/2026 11:00:00\nC2441/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPNC\r\nB) 2607191100\r\nC) 2607191400\r\nE) FIS/AFIS/RFFS AVBL O/R",
+      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
+      "details": "A) SPNC\r\nB) 2607191100\r\nC) 2607191400\r\nE) FIS/AFIS/RFFS AVBL O/R"
+    },
+    {
       "id": "C2429/26",
       "type": "NOTAMN",
       "location": "SPLO",
@@ -297,14 +297,6 @@
       "raw_text": "24/06/2026 12:38:00\nA2222/26 NOTAMN  | \r\nQ)SPIM/QLFAS/I/BO/A/000/999/\r\nA) SPQT\r\nB) 2606241235\r\nC) 2609232330\r\nE) SEQUENCED FLG LGT RWY 06 U/S",
       "q_line": "SPIM/QLFAS/I/BO/A/000/999/",
       "details": "A) SPQT\r\nB) 2606241235\r\nC) 2609232330\r\nE) SEQUENCED FLG LGT RWY 06 U/S"
-    },
-    {
-      "id": "A2407/26",
-      "type": "NOTAMN",
-      "location": "SPQT",
-      "raw_text": "13/07/2026 23:18:00\nA2407/26 NOTAMN  | \r\nQ)SPIM/QRALW/IV/NBO/W/000/140/0344S07315W003\r\nA) SPQT\r\nB) 2607141100\r\nC) 2607182300\r\nD) 1100-2300\r\nE) TRA DUE AIR PARADE OVER BERGERIE AD. PREVIOUS COOR WITH IQUITOS TWR. COORD: 034418S0731554W RDO:03NM F)GND G)FL140",
-      "q_line": "SPIM/QRALW/IV/NBO/W/000/140/0344S07315W003",
-      "details": "A) SPQT\r\nB) 2607141100\r\nC) 2607182300\r\nD) 1100-2300\r\nE) TRA DUE AIR PARADE OVER BERGERIE AD. PREVIOUS COOR WITH IQUITOS TWR. COORD: 034418S0731554W RDO:03NM F)GND G)FL140"
     },
     {
       "id": "C3965/25",
@@ -731,6 +723,14 @@
       "details": "A) SPMF\r\nB) 2607172125\r\nC) 2607212300\r\nE) RFFS NO AVBL"
     },
     {
+      "id": "C2438/26",
+      "type": "NOTAMN",
+      "location": "SPMF",
+      "raw_text": "18/07/2026 21:38:00\nC2438/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPMF\r\nB) 2607191500\r\nC) 2607191900\r\nE) FIS/AFIS/COM/MET/ARO/AIS AVBL O/R",
+      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
+      "details": "A) SPMF\r\nB) 2607191500\r\nC) 2607191900\r\nE) FIS/AFIS/COM/MET/ARO/AIS AVBL O/R"
+    },
+    {
       "id": "C0926/26",
       "type": "NOTAMN",
       "location": "SPZA",
@@ -971,6 +971,14 @@
       "details": "A) SPYL\r\nB) 2507212200\r\nC)  PERM\r\nE) NEW PCR DATA IN FORCE: RWY 17/35 (0-300) PCR 550 R/D/W/T RWY 17/35 (300-2500) PCR 440 F/C/X/T TWY ALPHA PCR 530 F/D/X/T TWY BRAVO PCR 480/F/C/X/T APN PCR 560 R/C/W/T"
     },
     {
+      "id": "A2450/26",
+      "type": "NOTAMR",
+      "location": "SPYL",
+      "raw_text": "19/07/2026 00:13:00\nA2450/26 NOTAMR A2448/26 | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPYL\r\nB) 2607190015\r\nC) 2607191600\r\nD) 0015-0300 1100-1600\r\nE) FIS/AFIS/ALRS/AIS/ARO/COM/MET/RFFS AVBL O/R",
+      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
+      "details": "A) SPYL\r\nB) 2607190015\r\nC) 2607191600\r\nD) 0015-0300 1100-1600\r\nE) FIS/AFIS/ALRS/AIS/ARO/COM/MET/RFFS AVBL O/R"
+    },
+    {
       "id": "C2282/26",
       "type": "NOTAMN",
       "location": "SPST",
@@ -1065,6 +1073,14 @@
       "raw_text": "08/05/2025 17:38:00\nC1740/25 NOTAMN  | \r\nQ)SPIM/QFAXX/IV/NBO/A/000/999/\r\nA) SPME\r\nB) 2505081830\r\nC)  PERM\r\nE) REF RD 321-2025-MTC/12 FECHA 25 ABR 2025 SOBRE INDICE DE CLASIFICACION DE PAVIMENTOS, DONDE DICE: RWY 32/14: PCN 47 F/C/X/T TWY: PCN 47 F/C/X/T APN: PCN 43 F/B/X/T DEBE DECIR RWY 32/14: PCR 420 F/C/X/T TWY A: PCR 420 F/C/X/T APN: PCR 440 F/C/X/T",
       "q_line": "SPIM/QFAXX/IV/NBO/A/000/999/",
       "details": "A) SPME\r\nB) 2505081830\r\nC)  PERM\r\nE) REF RD 321-2025-MTC/12 FECHA 25 ABR 2025 SOBRE INDICE DE CLASIFICACION DE PAVIMENTOS, DONDE DICE: RWY 32/14: PCN 47 F/C/X/T TWY: PCN 47 F/C/X/T APN: PCN 43 F/B/X/T DEBE DECIR RWY 32/14: PCR 420 F/C/X/T TWY A: PCR 420 F/C/X/T APN: PCR 440 F/C/X/T"
+    },
+    {
+      "id": "C2439/26",
+      "type": "NOTAMN",
+      "location": "SPME",
+      "raw_text": "19/07/2026 01:50:00\nC2439/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPME\r\nB) 2607191400\r\nC) 2607191500\r\nE) TWR/APP/AIS/ARO/RFFS AVBL O/R",
+      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
+      "details": "A) SPME\r\nB) 2607191400\r\nC) 2607191500\r\nE) TWR/APP/AIS/ARO/RFFS AVBL O/R"
     },
     {
       "id": "C1689/26",
