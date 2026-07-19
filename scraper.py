@@ -228,11 +228,7 @@ def run_scraper(headless: bool = True) -> dict:
         finally:
             _kill_chromium()
 
-    print(f"[scraper] {len(notams)} NOTAMs extraidos")
-
-    # Eliminar NOTAMs cuya fecha C ya expiró
-    notams = filter_expired(notams)
-    print(f"[scraper] {len(notams)} NOTAMs tras filtrar expirados")
+    print(f"[scraper] {len(notams)} NOTAMs extraidos (tal como CORPAC los muestra)")
 
     result_data = {
         "territory": "PERU",
