@@ -14,6 +14,7 @@ import logging
 LOG_FILE = os.path.join(os.environ.get("TEMP", "."), "notam_sync.log")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SCRAPER = os.path.join(SCRIPT_DIR, "scraper.py")
+HEARTBEAT = os.path.join(SCRIPT_DIR, "data", "heartbeat.txt")
 
 logging.basicConfig(
     filename=LOG_FILE, level=logging.INFO,
@@ -82,6 +83,12 @@ def main():
     while True:
         try:
             success = run_scraper_subprocess()
+            try:
+                os.makedirs(os.path.dirname(HEARTBEAT), exist_ok=True)
+                with open(HEARTBEAT, "w") as f:
+                    f.write(str(time.time()))
+            except Exception:
+                pass
             if success:
                 consecutive_failures = 0
                 log.info("Proximo sync en %ds...", INTERVAL)
