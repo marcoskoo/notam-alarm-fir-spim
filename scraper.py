@@ -230,6 +230,10 @@ def run_scraper(headless: bool = True) -> dict:
 
     print(f"[scraper] {len(notams)} NOTAMs extraidos")
 
+    # Eliminar NOTAMs cuya fecha C ya expiró
+    notams = filter_expired(notams)
+    print(f"[scraper] {len(notams)} NOTAMs tras filtrar expirados")
+
     result_data = {
         "territory": "PERU",
         "fir": "SPIM",
