@@ -120,7 +120,8 @@ def _scrape_once(headless: bool = True) -> list:
             time.sleep(5)
 
             print("[scraper] Abriendo NOTAM Distribucion...")
-            page.goto(DIST_URL, timeout=60000, wait_until="domcontentloaded")
+            page.goto("about:blank", timeout=10000)
+            page.goto(DIST_URL + "&_t=" + str(int(time.time())), timeout=60000, wait_until="domcontentloaded")
             time.sleep(6)
 
             print("[scraper] Buscando FIR SPIM vigentes...")

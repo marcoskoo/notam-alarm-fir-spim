@@ -1,14 +1,14 @@
 {
   "territory": "PERU",
   "fir": "SPIM",
-  "total_count": 139,
+  "total_count": 137,
   "serie_a_count": 53,
-  "serie_c_count": 86,
-  "notam_n_count": 92,
+  "serie_c_count": 84,
+  "notam_n_count": 90,
   "notam_r_count": 47,
   "source": "CORPAC S.A.",
   "source_url": "https://appoperacional.corpac.gob.pe/NOTAM/UserLayer/Notam/Consultas/consultas.php?action=",
-  "extraction_date": "2026-07-19 08:04:47",
+  "extraction_date": "2026-07-19 09:15:27",
   "notams": [
     {
       "id": "C4129/24",
@@ -251,14 +251,6 @@
       "details": "A) SPDT\r\nB) 2406171730\r\nC)  PERM\r\nE) HLP TROMPETEROS CLSD"
     },
     {
-      "id": "C2441/26",
-      "type": "NOTAMN",
-      "location": "SPNC",
-      "raw_text": "19/07/2026 11:00:00\nC2441/26 NOTAMN  | \r\nQ)SPIM/QFAAR/IV/NBO/A/000/999/\r\nA) SPNC\r\nB) 2607191100\r\nC) 2607191400\r\nE) FIS/AFIS/RFFS AVBL O/R",
-      "q_line": "SPIM/QFAAR/IV/NBO/A/000/999/",
-      "details": "A) SPNC\r\nB) 2607191100\r\nC) 2607191400\r\nE) FIS/AFIS/RFFS AVBL O/R"
-    },
-    {
       "id": "C2429/26",
       "type": "NOTAMN",
       "location": "SPLO",
@@ -433,14 +425,6 @@
       "raw_text": "12/07/2026 14:43:00\nC2379/26 NOTAMR C1411/26 | \r\nQ)SPIM/QNMAS/IV/BO/AE/000/999/\r\nA) SPWT\r\nB) 2607121445\r\nC) 2610121800\r\nE) VOR/DME MLV FREQ 117.200 MHZ CH 119X U/S",
       "q_line": "SPIM/QNMAS/IV/BO/AE/000/999/",
       "details": "A) SPWT\r\nB) 2607121445\r\nC) 2610121800\r\nE) VOR/DME MLV FREQ 117.200 MHZ CH 119X U/S"
-    },
-    {
-      "id": "C2421/26",
-      "type": "NOTAMN",
-      "location": "SPWT",
-      "raw_text": "17/07/2026 15:22:00\nC2421/26 NOTAMN  | \r\nQ)SPIM/QMRLC/IV/NBO/A/000/999/\r\nA) SPWT\r\nB) 2607171900\r\nC) 2607201300\r\nE) RWY 18/36 NO AVBL DEBIDO A WIP",
-      "q_line": "SPIM/QMRLC/IV/NBO/A/000/999/",
-      "details": "A) SPWT\r\nB) 2607171900\r\nC) 2607201300\r\nE) RWY 18/36 NO AVBL DEBIDO A WIP"
     },
     {
       "id": "A0237/26",
