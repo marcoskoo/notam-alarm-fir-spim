@@ -102,4 +102,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except Exception as e:
+            log.error("Daemon crash fatal: %s — reiniciando en 10s", e)
+            time.sleep(10)
