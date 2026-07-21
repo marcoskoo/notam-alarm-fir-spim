@@ -48,7 +48,7 @@ def _kill_tree(pid):
 
 
 def run_scraper_subprocess():
-    """Ejecuta scraper.py. Espera a que actualice el cache (no al proceso)."""
+    """Ejecuta scraper.py. Espera a que actualice el cache."""
     log.info("Ejecutando scraper...")
 
     cache_before = 0
@@ -66,22 +66,23 @@ def run_scraper_subprocess():
     )
 
     deadline = time.time() + SCRAPER_TIMEOUT
+    cache_detected = False
     while time.time() < deadline:
         try:
             cache_now = os.path.getmtime(CACHE_FILE)
-            if cache_now > cache_before:
-                log.info("Cache actualizado. Matando proceso scraper...")
-                _kill_tree(proc.pid)
-                _kill_all_chromium()
-                return True
+            if not cache_detected and cache_now > cache_before:
+                cache_detected = True
+                log.info("Cache actualizado. Esperando limpieza del scraper...")
         except Exception:
             pass
         time.sleep(3)
 
-    log.error("Scraper timeout (%ds) — matando PID %d y arbol", SCRAPER_TIMEOUT, proc.pid)
-    _kill_tree(proc.pid)
-    _kill_all_chromium()
-    return False
+    if not cache_detected:
+        log.error("Scraper timeout (%ds) — cache NO actualizado", SCRAPER_TIMEOUT)
+        _kill_all_chromium()
+        return False
+
+    return True
 
 
 def main():
@@ -94,9 +95,14 @@ def main():
 
     while True:
         try:
-            success = run_scraper_subprocess()
             try:
                 os.makedirs(os.path.dirname(HEARTBEAT), exist_ok=True)
+                with open(HEARTBEAT, "w") as f:
+                    f.write(str(time.time()))
+            except Exception:
+                pass
+            success = run_scraper_subprocess()
+            try:
                 with open(HEARTBEAT, "w") as f:
                     f.write(str(time.time()))
             except Exception:
