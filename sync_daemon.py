@@ -42,34 +42,31 @@ def run_scraper_subprocess():
     log.info("Ejecutando scraper...")
     proc = subprocess.Popen(
         [sys.executable, "-u", SCRAPER],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         creationflags=0x08000000,
         cwd=SCRIPT_DIR,
     )
 
+    deadline = time.time() + SCRAPER_TIMEOUT
+    while time.time() < deadline:
+        ret = proc.poll()
+        if ret is not None:
+            if ret != 0:
+                log.error("Scraper exit code %d", ret)
+                _kill_all_chromium()
+                return False
+            return True
+        time.sleep(2)
+
+    log.error("Scraper timeout (%ds) — matando PID %d", SCRAPER_TIMEOUT, proc.pid)
     try:
-        stdout, _ = proc.communicate(timeout=SCRAPER_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        log.error("Scraper timeout (%ds) — matando PID %d", SCRAPER_TIMEOUT, proc.pid)
-        try:
-            proc.kill()
-            proc.wait(timeout=5)
-        except Exception:
-            pass
-        _kill_all_chromium()
-        return False
-
-    if stdout:
-        for line in stdout.decode("utf-8", errors="replace").strip().split("\n"):
-            if line.strip():
-                log.info("[scraper] %s", line.strip())
-
-    if proc.returncode != 0:
-        log.error("Scraper exit code %d", proc.returncode)
-        _kill_all_chromium()
-        return False
-    return True
+        proc.kill()
+        proc.wait(timeout=5)
+    except Exception:
+        pass
+    _kill_all_chromium()
+    return False
 
 
 def main():
