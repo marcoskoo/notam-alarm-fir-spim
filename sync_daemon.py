@@ -29,9 +29,18 @@ SCRAPER_TIMEOUT = 120
 
 
 def _kill_all_chromium():
-    """Mata TODOS los procesos chromium en el sistema (seguro: solo chromium)."""
+    """Mata TODOS los procesos chromium en el sistema."""
     subprocess.run(
         ["taskkill", "/F", "/IM", "chromium.exe"],
+        capture_output=True, timeout=10,
+        creationflags=0x08000000,
+    )
+
+
+def _kill_tree(pid):
+    """Mata proceso y todos sus hijos (taskkill /T)."""
+    subprocess.run(
+        ["taskkill", "/F", "/PID", str(pid), "/T"],
         capture_output=True, timeout=10,
         creationflags=0x08000000,
     )
@@ -59,13 +68,13 @@ def run_scraper_subprocess():
             return True
         time.sleep(2)
 
-    log.error("Scraper timeout (%ds) — matando PID %d", SCRAPER_TIMEOUT, proc.pid)
+    log.error("Scraper timeout (%ds) — matando PID %d y sus hijos", SCRAPER_TIMEOUT, proc.pid)
+    _kill_tree(proc.pid)
+    _kill_all_chromium()
     try:
-        proc.kill()
         proc.wait(timeout=5)
     except Exception:
         pass
-    _kill_all_chromium()
     return False
 
 
