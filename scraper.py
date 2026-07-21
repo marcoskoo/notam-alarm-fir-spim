@@ -136,7 +136,11 @@ def _scrape_once(headless: bool = True) -> list:
                 form.elements['rdTemp'].value = 'V';
             }""")
             page.click('input[name="action"][value="Buscar"]')
-            time.sleep(15)
+            time.sleep(25)
+            try:
+                page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                pass
 
             print("[scraper] Extrayendo NOTAMs...")
             notams = page.evaluate("""() => {
