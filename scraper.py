@@ -136,11 +136,23 @@ def _scrape_once(headless: bool = True) -> list:
                 form.elements['rdTemp'].value = 'V';
             }""")
             page.click('input[name="action"][value="Buscar"]')
-            time.sleep(25)
+
+            print("[scraper] Esperando resultados de CORPAC...")
             try:
-                page.wait_for_load_state("networkidle", timeout=15000)
+                page.wait_for_function(
+                    """() => {
+                        var msg = document.body.innerText;
+                        var m = msg.match(/Se ha encontrado\\s+(\\d+)\\s+mensaje/);
+                        if (!m) return false;
+                        var expected = parseInt(m[1]);
+                        var links = document.querySelectorAll('a[href^="mailto:"]');
+                        return links.length >= expected;
+                    }""",
+                    timeout=60000,
+                )
             except Exception:
-                pass
+                print("[scraper] Timeout esperando count — continuando con lo que hay...")
+                time.sleep(5)
 
             print("[scraper] Extrayendo NOTAMs...")
             notams = page.evaluate("""() => {
