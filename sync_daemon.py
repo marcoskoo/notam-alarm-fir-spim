@@ -26,6 +26,7 @@ log = logging.getLogger("sync")
 INTERVAL = int(os.environ.get("SYNC_INTERVAL", "60"))
 MAX_DELAY = 300
 SCRAPER_TIMEOUT = 120
+CACHE_FILE = os.path.join(SCRIPT_DIR, "data", "notam_cache.json")
 
 
 def _kill_all_chromium():
@@ -47,8 +48,15 @@ def _kill_tree(pid):
 
 
 def run_scraper_subprocess():
-    """Ejecuta scraper.py y lo mata si excede timeout."""
+    """Ejecuta scraper.py. Espera a que actualice el cache (no al proceso)."""
     log.info("Ejecutando scraper...")
+
+    cache_before = 0
+    try:
+        cache_before = os.path.getmtime(CACHE_FILE)
+    except Exception:
+        pass
+
     proc = subprocess.Popen(
         [sys.executable, "-u", SCRAPER],
         stdout=subprocess.DEVNULL,
@@ -59,22 +67,20 @@ def run_scraper_subprocess():
 
     deadline = time.time() + SCRAPER_TIMEOUT
     while time.time() < deadline:
-        ret = proc.poll()
-        if ret is not None:
-            if ret != 0:
-                log.error("Scraper exit code %d", ret)
+        try:
+            cache_now = os.path.getmtime(CACHE_FILE)
+            if cache_now > cache_before:
+                log.info("Cache actualizado. Matando proceso scraper...")
+                _kill_tree(proc.pid)
                 _kill_all_chromium()
-                return False
-            return True
-        time.sleep(2)
+                return True
+        except Exception:
+            pass
+        time.sleep(3)
 
-    log.error("Scraper timeout (%ds) — matando PID %d y sus hijos", SCRAPER_TIMEOUT, proc.pid)
+    log.error("Scraper timeout (%ds) — matando PID %d y arbol", SCRAPER_TIMEOUT, proc.pid)
     _kill_tree(proc.pid)
     _kill_all_chromium()
-    try:
-        proc.wait(timeout=5)
-    except Exception:
-        pass
     return False
 
 
