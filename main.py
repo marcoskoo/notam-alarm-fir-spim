@@ -121,6 +121,17 @@ def _to_api_items(data: dict) -> list:
             "q_line": n.get("q_line", ""),
             "raw_text": n.get("raw_text", ""),
         })
+
+    def _sort_key(item):
+        eu = item.get("effective_until") or ""
+        if "PERM" in eu.upper():
+            return (1, 0)
+        exp = _parse_expiry(eu)
+        if exp:
+            return (0, exp.timestamp())
+        return (2, 0)
+
+    items.sort(key=_sort_key)
     return items
 
 
