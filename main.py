@@ -355,11 +355,19 @@ th{background:#1a5276;color:white}tr:nth-child(even){background:#f9f9f9}
 
 
 @app.get("/notams", response_model=NotamResponse)
-async def get_all_notams():
+async def get_all_notams(filter_expired: bool = False):
     data = get_cached_notams()
     if not data.get("notams"):
         raise HTTPException(404, "No hay NOTAMs")
     items = _to_api_items(data)
+    if filter_expired:
+        now = datetime.now(timezone.utc)
+        items = [
+            i for i in items
+            if not i.get("effective_until")
+            or "PERM" in (i["effective_until"] or "").upper()
+            or (_parse_expiry(i["effective_until"]) or now) > now
+        ]
     return NotamResponse(
         fir=data["fir"],
         total_count=len(items),
