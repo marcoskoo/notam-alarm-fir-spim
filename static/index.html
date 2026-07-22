@@ -837,6 +837,10 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
       </label>
       <span>Auto-actualizar cada <b>60 seg</b></span>
       <span id="nextRefreshLabel" style="color:#6b7280;"></span>
+      <label style="display:flex;align-items:center;gap:4px;margin-left:12px;cursor:pointer;font-size:.75rem;color:#6b7280;">
+        <input type="checkbox" id="hideExpired" onchange="render()" style="cursor:pointer;">
+        Ocultar expirados
+      </label>
       <span style="flex:1;"></span>
       <button class="btn-fetch-all" onclick="fetchFirCompleta()" style="padding:6px 16px;font-size:.73rem;">
         🌐 Buscar todos los NOTAMs FIR SPIM
@@ -1477,12 +1481,14 @@ function construir(txt){
   var fechaTs=fechaToTs(fecha);
   var publishedTs = fechaTs; // For manually entered NOTAMs, use B field date as fallback
   var rawVis = rawParaMostrar(txt);   // texto limpio para mostrar en tarjeta
+  var expired = expTs ? (expTs <= Date.now()) : false;
   return {
     id:id, raw:txt, rawVis:rawVis, c:cf, b:bf, a:af, q:qf, e:ef,
     aero:aero, fecha:fecha, fechaTs:fechaTs, publishedTs:publishedTs, publishedAt:fecha, tipo:tipo, expTs:expTs,
     perm:cf?cf.perm:false,
     alarma:cf?(!cf.perm&&cf.est):false,
-    silenciado:false
+    silenciado:false,
+    expired:expired
   };
 }
 
@@ -1901,6 +1907,10 @@ function expandirTermino(termino){
 }
 
 function notamVisible(n){
+  /* Filtro: ocultar expirados */
+  var hideExp = document.getElementById('hideExpired');
+  if(hideExp && hideExp.checked && n.expired) return false;
+
   /* Filtro por tipo */
   if(filtroActual==='est')  { if(!n.alarma || n.perm) return false; }
   if(filtroActual==='sino') { if(n.alarma  || n.perm) return false; }
@@ -2456,6 +2466,7 @@ function procesarCorpacItems(items){
       perm: cf ? cf.perm : false,
       alarma: cf ? (!cf.perm && cf.est) : false,
       silenciado: false,
+      expired: expTs ? (expTs <= Date.now()) : false,
       fuenteCORPAC: true
     });
     added++;
