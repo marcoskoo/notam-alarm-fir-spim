@@ -157,20 +157,28 @@ def _scrape_once(headless: bool = True) -> list:
             print("[scraper] Extrayendo NOTAMs...")
             notams = page.evaluate("""() => {
                 var results = [];
+                var skipped = [];
                 var links = document.querySelectorAll('a[href^="mailto:"]');
                 links.forEach(function(link) {
                     var href = link.getAttribute('href');
                     var bodyIdx = href.indexOf('body=');
-                    if (bodyIdx < 0) return;
+                    if (bodyIdx < 0) { skipped.push('no-body'); return; }
                     var body = decodeURIComponent(href.substring(bodyIdx + 5));
                     var lines = body.split('\\n');
                     var notamId = '';
                     var notamStartIdx = 0;
                     for (var i = 0; i < lines.length; i++) {
-                        var m = lines[i].trim().match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
+                        var ln = lines[i].trim();
+                        var m = ln.match(/^([AC]\\d{4}\\/\\d{2,4})\\s+(NOTAM[NRC])/);
                         if (m) { notamId = m[1]; notamStartIdx = i; break; }
+                        /* fallback: allow shorter prefix, extra spaces, or year like /2026 */
+                        var m2 = ln.match(/^([AC]\\d{3,5}\\/\\d{2,4})\\s*\\s+(NOTAM[NRC])/);
+                        if (m2) { notamId = m2[1]; notamStartIdx = i; break; }
+                        /* fallback: ID somewhere on the line */
+                        var m3 = ln.match(/([AC]\\d{4}\\/\\d{2,4})/);
+                        if (m3) { notamId = m3[1]; notamStartIdx = i; break; }
                     }
-                    if (!notamId) return;
+                    if (!notamId) { skipped.push(lines.slice(0,3).join('|')); return; }
                     var parent = link.closest('table');
                     var expLink = parent ? parent.querySelector('a[href*="ocultarMensaje"]') : null;
                     var location = '';
@@ -207,6 +215,7 @@ def _scrape_once(headless: bool = True) -> list:
                         details: details.replace(/\\n/g, '\\r\\n')
                     });
                 });
+                if (skipped.length) console.log('[scraper] Skipped ' + skipped.length + ': ' + skipped.join(' || '));
                 return results;
             }""")
 
