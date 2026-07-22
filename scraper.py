@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 CACHE_FILE = os.path.join(DATA_DIR, "notam_cache.json")
+BROWSER_DATA_DIR = os.path.join(DATA_DIR, "browser_profile")
+CDP_PORT = 9222
+CDP_URL = f"http://127.0.0.1:{CDP_PORT}"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 CORPAC_USER = os.environ.get("CORPAC_USER", "aissphi")
@@ -96,28 +99,54 @@ def filter_expired(notams: list) -> list:
     return vivos
 
 
-def _scrape_once(headless: bool = True) -> list:
+def _cdp_alive() -> bool:
+    import urllib.request, urllib.error
+    try:
+        urllib.request.urlopen(f"{CDP_URL}/json/version", timeout=3)
+        return True
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def _scrape_once(headless: bool = True, keep_browser: bool = False) -> list:
     """Una sola intento de scraping. Lanza excepción si falla."""
     from playwright.sync_api import sync_playwright
 
     browser = None
+    connected_via_cdp = False
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=headless,
-                executable_path=None,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
-            )
+            if _cdp_alive():
+                print(f"[scraper] Conectando a Chromium existente via CDP {CDP_URL}...")
+                browser = p.chromium.connect_over_cdp(CDP_URL)
+                connected_via_cdp = True
+            else:
+                os.makedirs(BROWSER_DATA_DIR, exist_ok=True)
+                launch_args = [
+                    "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+                    f"--remote-debugging-port={CDP_PORT}",
+                    f"--user-data-dir={BROWSER_DATA_DIR}",
+                ]
+                print(f"[scraper] Lancando Chromium con CDP en puerto {CDP_PORT}...")
+                browser = p.chromium.launch(
+                    headless=headless,
+                    executable_path=None,
+                    args=launch_args,
+                )
+
             page = browser.new_page(viewport={"width": 1280, "height": 900})
             page.set_default_timeout(60000)
 
-            print("[scraper] Login...")
-            page.goto(LOGIN_URL, timeout=60000, wait_until="domcontentloaded")
-            time.sleep(3)
-            page.fill("#txtusu", CORPAC_USER)
-            page.fill("#txtpass", CORPAC_PASS)
-            page.click("#action")
-            time.sleep(5)
+            if not connected_via_cdp:
+                print("[scraper] Login...")
+                page.goto(LOGIN_URL, timeout=60000, wait_until="domcontentloaded")
+                time.sleep(3)
+                page.fill("#txtusu", CORPAC_USER)
+                page.fill("#txtpass", CORPAC_PASS)
+                page.click("#action")
+                time.sleep(5)
+            else:
+                print("[scraper] Sesión existente detectada — saltando login")
 
             print("[scraper] Abriendo NOTAM Distribucion...")
             page.goto("about:blank", timeout=10000)
@@ -223,35 +252,44 @@ def _scrape_once(headless: bool = True) -> list:
 
     finally:
         if browser:
-            try:
-                browser.close()
-            except Exception:
-                pass
-            try:
-                browser.kill()
-            except Exception:
-                pass
+            if keep_browser:
+                print("[scraper] Browser abierto — sesión persistente")
+                try:
+                    page.close()
+                except Exception:
+                    pass
+            else:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+                try:
+                    browser.kill()
+                except Exception:
+                    pass
 
 
-def run_scraper(headless: bool = True) -> dict:
+def run_scraper(headless: bool = True, keep_browser: bool = False) -> dict:
     """Scraping con retry y cleanup de procesos zombie."""
     notams = None
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             print(f"[scraper] Intento {attempt}/{MAX_RETRIES}...")
-            notams = _scrape_once(headless=headless)
+            notams = _scrape_once(headless=headless, keep_browser=keep_browser)
             break
         except Exception as e:
             print(f"[scraper] Intento {attempt} fallo: {e}")
-            _kill_chromium()
+            if not keep_browser:
+                _kill_chromium()
             if attempt < MAX_RETRIES:
                 print(f"[scraper] Reintentando en {RETRY_DELAY}s...")
                 time.sleep(RETRY_DELAY)
             else:
                 raise RuntimeError(f"Scraper fallo {MAX_RETRIES} veces: {e}")
         finally:
-            _kill_chromium()
+            if not keep_browser:
+                _kill_chromium()
 
     print(f"[scraper] {len(notams)} NOTAMs extraidos (tal como CORPAC los muestra)")
 
