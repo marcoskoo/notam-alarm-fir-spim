@@ -120,18 +120,26 @@ def _scrape_once(headless: bool = True, keep_browser: bool = False) -> list:
                 print(f"[scraper] Conectando a Chromium existente via CDP {CDP_URL}...")
                 browser = p.chromium.connect_over_cdp(CDP_URL)
                 connected_via_cdp = True
-            else:
+            elif keep_browser:
                 os.makedirs(BROWSER_DATA_DIR, exist_ok=True)
                 launch_args = [
                     "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
                     f"--remote-debugging-port={CDP_PORT}",
-                    f"--user-data-dir={BROWSER_DATA_DIR}",
                 ]
                 print(f"[scraper] Lancando Chromium con CDP en puerto {CDP_PORT}...")
+                ctx = p.chromium.launch_persistent_context(
+                    user_data_dir=BROWSER_DATA_DIR,
+                    headless=headless,
+                    args=launch_args,
+                    viewport={"width": 1280, "height": 900},
+                )
+                browser = ctx.browser
+            else:
+                print("[scraper] Lancando Chromium...")
                 browser = p.chromium.launch(
                     headless=headless,
                     executable_path=None,
-                    args=launch_args,
+                    args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
                 )
 
             page = browser.new_page(viewport={"width": 1280, "height": 900})
