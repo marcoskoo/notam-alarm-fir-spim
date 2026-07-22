@@ -837,8 +837,8 @@ E) RFFS SE REDUJO A CAT 5"></textarea>
       </label>
       <span>Auto-actualizar cada <b>60 seg</b></span>
       <span id="nextRefreshLabel" style="color:#6b7280;"></span>
-      <label style="display:flex;align-items:center;gap:4px;margin-left:12px;cursor:pointer;font-size:.75rem;color:#6b7280;">
-        <input type="checkbox" id="hideExpired" onchange="render()" style="cursor:pointer;">
+      <label id="hideExpiredLabel" style="display:flex;align-items:center;gap:4px;margin-left:12px;cursor:not-allowed;font-size:.75rem;color:#9ca3af;">
+        <input type="checkbox" id="hideExpired" onchange="render()" disabled style="cursor:not-allowed;">
         Ocultar expirados
       </label>
       <span style="flex:1;"></span>
@@ -2051,6 +2051,15 @@ function renderizar(){
     return;
   }
 
+  /* Habilitar checkbox de expirados solo cuando hay NOTAMs cargados */
+  var hideExp=document.getElementById('hideExpired');
+  var hideExpLbl=document.getElementById('hideExpiredLabel');
+  if(hideExp && notams.length>0){
+    hideExp.disabled=false;
+    hideExp.style.cursor='pointer';
+    if(hideExpLbl){ hideExpLbl.style.cursor='pointer'; hideExpLbl.style.color='#6b7280'; }
+  }
+
   /* Contar visibles según filtro */
   var visibles = 0;
   for(var i=0;i<notams.length;i++){
@@ -2332,8 +2341,12 @@ function fetchConCodigos(codes, esFirCompleta, esAutoRefresh){
   if(!codes.length) return;
   var allBtn=document.querySelector('.btn-fetch-all');
   var selBtn=document.getElementById('btnFetch');
+  var hideExp=document.getElementById('hideExpired');
   if(allBtn) allBtn.disabled=true;
   if(selBtn) selBtn.disabled=true;
+  if(hideExp){ hideExp.disabled=true; hideExp.style.cursor='not-allowed'; }
+  var hideExpLbl=document.getElementById('hideExpiredLabel');
+  if(hideExpLbl){ hideExpLbl.style.cursor='not-allowed'; hideExpLbl.style.color='#9ca3af'; }
 
   var label=esFirCompleta?'FIR SPIM':codes.slice(0,4).join(',')+(codes.length>4?'…':'');
   setFetchStatus('<span class="spin">⟳</span> Consultando CORPAC API — '+label+'...','fetch-info');
@@ -2351,10 +2364,8 @@ function fetchConCodigos(codes, esFirCompleta, esAutoRefresh){
     }
 
     var r=procesarCorpacItems(items);
-    if(r.added>0){
-      sortNotams();
-      guardar(); renderizar();
-    }
+    sortNotams();
+    guardar(); renderizar();
     var msg = r.added===0&&r.dupes===0
       ? 'ℹ️ Sin NOTAMs nuevos ['+fuente+']'
       : '✅ '+r.added+' NOTAM'+(r.added!==1?'s':'')+' recibido'+(r.added!==1?'s':'')
@@ -2367,6 +2378,8 @@ function fetchConCodigos(codes, esFirCompleta, esAutoRefresh){
   function onError(err){
     if(allBtn) allBtn.disabled=false;
     if(selBtn) selBtn.disabled=false;
+    if(hideExp && notams.length>0){ hideExp.disabled=false; hideExp.style.cursor='pointer'; }
+    if(hideExpLbl && notams.length>0){ hideExpLbl.style.cursor='pointer'; hideExpLbl.style.color='#6b7280'; }
     setFetchStatus('❌ Error: '+err,'fetch-err');
   }
 
